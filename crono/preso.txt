@@ -1,0 +1,136 @@
+Crono
+A new programming language of sorts
+Brad Burlage
+James Debo
+Joey Mangieri
+
+November 21, 2011
+
+Brad Burlage James Debo Joey Mangieri
+
+Crono
+
+Grammar
+
+Program → (List | Atom)∗
+List → ( (List | Atom)∗ )
+Atom → Nil | Integer | Symbol
+Nil → “nil” | ()
+
+Brad Burlage James Debo Joey Mangieri
+
+Crono
+
+Types
+CronoType
+
+Atom
+
+Function
+
+CronoFunction
+
+CronoNumber
+
+LambdaFunction
+
+Brad Burlage James Debo Joey Mangieri
+
+Crono
+
+Cons
+
+Symbol
+
+Nil
+
+Interpreter
+
+Parser
+LambdaFunction(Program, DefaultEnvironment)
+Interpreter.eval()
+
+Brad Burlage James Debo Joey Mangieri
+
+Crono
+
+Interpreter
+eval(expr )
+expr = Cons
+
+expr = Atom
+
+function = eval(car(expr ))
+
+eval(arg ) foreach arg in cdr(expr )
+
+Environment ← args
+
+eval(function, Environment)
+Brad Burlage James Debo Joey Mangieri
+
+Crono
+
+subst(expr )
+
+Environment & CronoFunctions
+
+Environment = {Symbol : CronoType}
+
+Default environment =
+
+{
+quote,
+cons,
+deﬁne,
+add,
+==,
+set,
+}
+
+Brad Burlage James Debo Joey Mangieri
+
+Crono
+
+let,
+car,
+lambda,
+subtract,
+>,
+load,
+
+if,
+cdr,
+multiply,
+<,
+print
+
+divide,
+
+CronoOptions
+
+Parser and interpreter debug output
+Show/hide atom evaluation
+Show environment during execution
+Use static or dynamic scoping
+Show types in the environment
+Show closures
+
+Brad Burlage James Debo Joey Mangieri
+
+Crono
+
+TODO
+
+Strings
+Haskell-like type checking
+Setting CronoOptions via POSIX command line ﬂags
+Improve and possibly expand CronoOptions
+Extend CronoNumber
+Better error handling
+
+Brad Burlage James Debo Joey Mangieri
+
+Crono
+
+

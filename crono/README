@@ -1,0 +1,7 @@
+To build crono, run `ant` from the toplevel directory.
+
+To run crono:
+  cd bin
+  java crono.Crono [<file>]
+
+All source files are located in src/crono. All output files are put in bin/.

@@ -1,0 +1,19 @@
+# Compiled files
+*.class
+ParseException.java
+Parser.java
+ParserConstants.java
+ParserTokenManager.java
+SimpleCharStream.java
+Token.java
+TokenMgrError.java
+*.aux
+*.log
+*.toc
+*.pdf
+preso.nav
+preso.out
+preso.snm
+
+# Vim swap files
+.*.swp

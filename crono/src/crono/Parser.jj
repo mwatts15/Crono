@@ -1,0 +1,132 @@
+options {
+  STATIC = false;
+}
+
+PARSER_BEGIN(Parser)
+
+package crono;
+
+import java.util.ArrayList;
+import java.util.List;
+
+// PROTIP: we can't statically import NIL because javacc gives it special
+// meaning in Parser
+import crono.AbstractSyntax.*;
+import crono.Cons;
+import crono.CronoOptions;
+import crono.Nil;
+
+public class Parser {}
+
+PARSER_END(Parser)
+
+SKIP:
+{
+    " "
+  | "\t"
+  | "\n"
+  | "\r"
+  | <"%" (~["\n","\r"])* ("\n"|"\r")>
+}
+
+TOKEN:
+{
+    < NIL : ["N","n"] ["I","i"] ["L","l"] >
+}
+
+TOKEN:
+{
+    < LPAR : "(" >
+  | < RPAR : ")" >
+  | < INTEGER : (["0"-"9"])+ | "-" (["0"-"9"])+ >
+  | < SYMBOL : ["a"-"z", "A"-"Z", "~", "`", "!", "@", "#", "$", "/", "^", "&",
+                "*", "_", "-", "=", "+", "{", "}", "[", "]", "|", "\\", ":",
+                ";", "<", ">", ",", ".", "?", "'", "\""](["a"-"z", "A"-"Z",
+                "0"-"9", "~", "`", "!", "@", "#", "$", "/", "^", "&", "*", "_",
+                "-", "=", "+", "{", "}", "[", "]", "|", "\\", ":", ";", "<",
+                ">", ",", ".", "?", "'", "\""])* >
+}
+
+TOKEN:
+{
+  < ERROR : ~[] >
+}
+
+Atom atom():
+{ Token n; }
+{
+    <NIL>         { return Nil.NIL; }
+  | n = <INTEGER> { return new CronoNumber(Long.valueOf(n.image)); }
+  | n = <SYMBOL>      { return Symbol.valueOf(n.image); }
+}
+
+Cons list():
+{
+  Atom a;
+  Cons c;
+  List<CronoType> l = new ArrayList<CronoType>();
+}
+{
+  <LPAR>
+  (
+      c = list() {
+        if (CronoOptions.PARSER_DPRINT) {
+          CronoOptions.dprint("Saw LIST: %s\n",c);
+        }
+        l.add(c);
+      }
+    | a = atom() {
+        if (CronoOptions.PARSER_DPRINT) {
+          CronoOptions.dprint("Saw ATOM: %s [ %s ]\n", a,
+            a.getClass().getName());
+        }
+        l.add(a);
+      }
+  )*
+  <RPAR>
+  {
+    if (l.size() == 0) {
+      return Nil.NIL;
+    } else {
+      l.add(Nil.NIL);
+      return new Cons(l);
+    }
+  }
+}
+
+CronoType prog(Environment env):
+{
+  List<CronoType> l;
+  LambdaFunction lf;
+  Cons c;
+  Atom a;
+  CronoType lastResult = null;
+}
+{
+  (
+      c = list() {
+        if (CronoOptions.PARSER_DPRINT) {
+          CronoOptions.dprint("Saw LIST: %s\n",c);
+        }
+        l = new ArrayList<CronoType>();
+        l.add(c);
+        lf = new LambdaFunction(l, env);
+        lastResult = Interpreter.run(lf, env);
+        env = lf.environment;
+      }
+    | a = atom() {
+        if (CronoOptions.PARSER_DPRINT) {
+          CronoOptions.dprint("Saw ATOM: %s [ %s ]\n", a,
+            a.getClass().getName());
+        }
+        l = new ArrayList<CronoType>();
+        l.add(a);
+        lf = new LambdaFunction(l, env);
+        lastResult = Interpreter.run(lf, env);
+        env = lf.environment;
+      }
+    | <RPAR> { throw new ParseException("Unmatched parenthesis"); }
+  )* {
+    return lastResult;
+  }
+}
