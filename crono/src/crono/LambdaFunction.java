@@ -103,6 +103,7 @@ public class LambdaFunction implements Function {
       CronoType val = valit.next();
       result.append(key.toString());
       result.append(": ");
+
       if (val instanceof LambdaFunction) {
         boolean prev = CronoOptions.LAMBDA_SHOW_CLOSURE;
         CronoOptions.LAMBDA_SHOW_CLOSURE = false;

@@ -89,7 +89,7 @@ public class Interpreter {
         CronoType f = eval(cons.car(), environment);
         Function function = null;
         if (f instanceof Symbol) {
-          Symbol funcKey = (Symbol)f; // MORE LIKE FUNKAAAAAAY
+          Symbol funcKey = (Symbol)f;
           CronoType val = environment.get(funcKey);
           if (val instanceof Function) {
             function = (Function)val;
