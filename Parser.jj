@@ -1,0 +1,73 @@
+PARSER_BEGIN(Parser)
+
+import java.util.List;
+
+public class Parser{
+	public static void main(String[] args){
+		try{
+			Parser parser = new Parser(System.in); //read from stdin, file support later?
+			System.out.println(parser.parse());
+		}catch(ParseException e){
+			System.out.println("Parse Exception: "+e.getMessage());
+		}finally{
+			return;		
+		}
+	}
+}
+
+PARSER_END(Parser)
+
+SKIP:
+{
+	 " "
+	|"\r"
+	|"\n"
+	|"\t"
+	|<";"(~["\r","\n"])* ("\r"|"\n")+> //comments start with semicolons in lisp/scheme
+}
+
+TOKEN: //literals
+{
+	<INT: (["0"-"9"])+ | "-" (["0"-"9"])+>
+}
+
+TOKEN:
+{
+	<LPAREN: "("|"{" > //parentheses or curly brackets like in FAE
+	|<RPAREN: ")"|"}" >
+	|<SYMBOL: ["!"-"'","*"-"/",":"-"z","|"](["!"-"'","*"-"/",":"-"z","|"])* >
+	//all printable ascii characers not containing (,),},{, or starting with a number
+	//we'll look up symbol string when we create 
+}
+
+TOKEN:
+{
+	<ERROR: ~[] >
+}
+
+String parse():
+{ String a,l="",lt;}
+{
+	(
+	a = atom(){l = l+" "+a;}
+	|lt = list(){l = l+" "+lt;}
+	)+{return l;}
+
+}
+
+String atom(): //Todo: Create Atom class
+{ Token n; }
+{
+	 n = <INT> { return "(num "+n+")"; }
+	|n = <SYMBOL> { return "(sym "+String.valueOf(n.image)+")"; }
+}
+
+String list()://Todo: create Cons class (list)
+{ String a,lt,l="(";}
+{
+	<LPAREN>
+	(a = atom() {l=l+" "+a;}
+	|lt = list() {l=l+" "+lt;})+
+	<RPAREN>
+	{return l+" )";}
+}
