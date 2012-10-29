@@ -208,6 +208,7 @@ public enum CronoFunctions {
         CronoType val = Interpreter.eval(((Cons)cdr).car(), environment);
         env.put(key, val);
       }
+      CronoOptions.dprint("(Converting LET to LAMBDA)\n");
       List<CronoType> body = Arrays.asList(Arrays.copyOfRange(args, 1, args.length));
       LambdaFunction lambda = new LambdaFunction(body);
       return Interpreter.run(lambda, env);
