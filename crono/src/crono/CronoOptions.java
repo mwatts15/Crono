@@ -8,8 +8,119 @@ import java.util.List;
  * Options and utilities for debugging and examining parts of the Crono
  * language.
  */
-// TODO:
-//      - cli argument parsing
+class Option {
+  public char shortopt;
+  public String longopt;
+  public boolean arg;
+  public Option(char shortopt) {
+    this(shortopt, null, false);
+  }
+  public Option(char shortopt, boolean arg) {
+    this(shortopt, null, arg);
+  }
+  public Option(char shortopt, String longopt) {
+    this(shortopt, longopt, false);
+  }
+  public Option(char shortopt, String longopt, boolean arg) {
+    this.shortopt = shortopt;
+    this.longopt = longopt;
+    this.arg = arg;
+  }
+}
+class OptionParser {
+  public String optopt; /*< Used for arguments to options */
+  public String optchar; /*< Used for the error case */
+
+  private String[] args;
+  private int current, subarg;
+
+  public OptionParser(String[] args) {
+    this.args = args;
+    this.current = 0;
+    this.subarg = -1;
+    this.optopt = null;
+  }
+    
+  public int nextarg(Option[] options) {
+    if(current >= args.length) {
+      return -1;
+    }
+    this.optopt = null;
+    this.optchar = null;
+
+    int arglen = args[current].length();
+    if(subarg == -1) {
+      if("--".equals(args[current])) {
+	optchar = "--";
+	current++; /*< Move past */
+	return -1; /*< Signal the end of the option stream */
+      }
+      if(arglen >= 1 && args[current].charAt(0) == '-') {
+	if(arglen >= 2 && args[current].charAt(1) == '-') {
+	  /* Search option list for long arg */
+	  String optstr = args[current].substring(2);
+	  for(Option opt : options) {
+	    if(optstr.equals(opt.longopt)) {
+	      current++; /*< Move to the next position */
+	      if(opt.arg) {
+		if(current < args.length) {
+		  optopt = args[current];
+		  current++;
+		}
+	      }
+	      return ((int)(opt.shortopt));
+	    }
+	  }
+	  
+	  /* Couldn't find the long option, return '?' */
+	  optchar = optstr;
+	  current++;
+	  return ((int)'?');
+	}else {
+	  subarg = 1;
+	}
+      }else {
+	return -1;
+      }
+    }
+    
+    /* Parse short options here */
+    char optionchar = args[current].charAt(subarg);
+    for(Option opt : options) {
+      if(opt.shortopt == optionchar) {
+	if(opt.arg) {
+	  if(subarg == arglen - 1) {
+	    /* End of the option stream, take next whole string */
+	    current++; /*< Move to next position */
+	    if(current < args.length) {
+	      optopt = args[current]; /*< Store argument */
+	    }
+	  }else {
+	    optopt = args[current].substring(subarg + 1);
+	  }
+	  subarg = -1; /*< Reset shortopt parsing to default */
+	  current++; /*< Move to next option */
+	}else if(subarg == arglen - 1) {
+	  subarg = -1;
+	  current++;
+	}else {
+	  subarg++;
+	}
+	
+	return ((int)(opt.shortopt));
+      }
+    }
+    
+    /* Didn't find the option, return '?' */
+    optchar = "" + optionchar;
+    current++;
+    return ((int)'?');
+  }
+  public int optind() {
+    return current;
+  }
+}
+
 public class CronoOptions {
   private static String HELP_STRING =
       "usage: crono [-adDeEiIlLmMpqstT] files ...";
@@ -50,120 +161,7 @@ public class CronoOptions {
   public static boolean PARSER_DPRINT = false;
   
   // List of files to run on the interpreter
-  public static List<String> FILES = new LinkedList<>();
-  
-  private class Option {
-    public char shortopt;
-    public String longopt;
-    public boolean arg;
-    public Option(char shortopt) {
-      Option(shortopt, null, false);
-    }
-    public Option(char shortopt, boolean arg) {
-      Option(shortopt, null, arg);
-    }
-    public Option(char shortopt, String longopt) {
-      Option(shortopt, longopt, false);
-    }
-    public Option(char shortopt, String longopt, boolean arg) {
-      this.shortopt = shortopt;
-      this.longopt = longopt;
-      this.arg = arg;
-    }
-  }
-  private class OptionParser {
-    public String optopt; /*< Used for arguments to options */
-    public String optchar; /*< Used for the error case */
-    
-    private String[] args;
-    private int current, subarg;
-    
-    public OptionParser(String[] args) {
-      this.args = args;
-      this.current = 0;
-      this.subarg = -1;
-      this.optopt = null;
-    }
-    
-    public int nextarg(Option[] options) {
-      if(current >= args.length) {
-        return -1;
-      }
-      this.optopt = null;
-      this.optchar = '\0';
-      
-      int arglen = args[current].length();
-      if(subarg == -1) {
-          if("--".equals(args[current])) {
-	    optchar = "--";
-	    current++; /*< Move past */
-	    return -1; /*< Signal the end of the option stream */
-	  }
-	  if(arglen >= 1 && args[current].charAt(0) == '-') {
-	    if(arglen >= 2 && args[current].charAt(1) == '-') {
-	      /* Search option list for long arg */
-	      String optstr = args[current].substring(2);
-	      for(Option opt : options) {
-		if(optstr.equals(opt.longopt)) {
-		  current++; /*< Move to the next position */
-		  if(opt.arg) {
-		    if(current < args.length) {
-		      optopt = args[current];
-		      current++;
-		    }
-		  }
-		  return ((int)(opt.shortopt));
-		}
-	      }
-	      
-	      /* Couldn't find the long option, return '?' */
-	      optchar = optstr;
-	      current++;
-	      return ((int)'?');
-	    }else {
-	      subarg = 1;
-	    }
-	  }else {
-	    return -1;
-	  }
-      }
-      
-      /* Parse short options here */
-      char optionchar = args[current].charAt(subarg);
-      for(Option opt : options) {
-	if(opt.shortopt == optionchar) {
-	  if(opt.arg) {
-	    if(subarg == arglen - 1) {
-	      /* End of the option stream, take next whole string */
-		current++; /*< Move to next position */
-		if(current < args.length) {
-		  optopt = args[current]; /*< Store argument */
-		}
-	    }else {
-	      optopt = args[current].substring(subarg + 1);
-	    }
-	    subarg = -1; /*< Reset shortopt parsing to default */
-	    current++; /*< Move to next option */
-	  }else if(subarg == arglen - 1) {
-	    subarg = -1;
-	    current++;
-	  }else {
-	    subarg++;
-	  }
-	  
-	  return ((int)(opt.shortopt));
-	}
-      }
-      
-      /* Didn't find the option, return '?' */
-      optchar = new String(optionchar);
-      current++;
-      return ((int)'?');
-    }
-    public int optind() {
-      return current;
-    }
-  }
+  public static List<String> FILES = new LinkedList<String>();
   
   public static boolean parseargs(String[] args) {
     OptionParser optparse = new OptionParser(args);
@@ -174,8 +172,8 @@ public class CronoOptions {
       new Option('e', "show-environment"),
       new Option('E', "no-show-environment"),
       new Option('h', "help"),
-      new Option('i', "debug-ident"),
-      new Option('I', "no-debug-ident"),
+      new Option('i', "debug-indent"),
+      new Option('I', "no-debug-indent"),
       new Option('l', "lambda-show-closure"),
       new Option('L', "no-lambda-show-closure"),
       new Option('m', "env-multiline"),
@@ -184,11 +182,11 @@ public class CronoOptions {
       new Option('q', "quiet"),
       new Option('s', "static"),
       new Option('t', "env-show-types"),
-      new Option('T', "debug-ident-level", true),
+      new Option('T', "debug-indent-level", true),
     };
     int ch;
     
-    ch = optparse.nextarg();
+    ch = optparse.nextarg(opts);
     while(ch != -1) {
 	switch(ch) {
 	case 'a':
@@ -210,10 +208,10 @@ public class CronoOptions {
 	    System.err.println(HELP_STRING);
 	    return false;
 	case 'i':
-	    DPRINT_IDENT = true;
+	    DPRINT_INDENT = true;
 	    break;
 	case 'I':
-	    DPRINT_IDENT = false;
+	    DPRINT_INDENT = false;
 	    break;
 	case 'l':
 	    LAMBDA_SHOW_CLOSURE = true;
@@ -244,7 +242,7 @@ public class CronoOptions {
 	    break;
 	case '?':
 	default:
-	    System.err.printf(ILLEGAL_OPION, optparse.optchar);
+	    System.err.printf(ILLEGAL_OPTION, optparse.optchar);
 	    System.err.println(HELP_STRING);
 	    return false;
 	}
@@ -252,7 +250,7 @@ public class CronoOptions {
     
     /* Use the remaining arguments as files */
     for(int i = optparse.optind(); i < args.length; ++i) {
-      FILES.append(args[i]);
+      FILES.add(args[i]);
     }
     
     return true;
@@ -277,7 +275,7 @@ public class CronoOptions {
       
       /* If we are indenting, we should indent subsequent lines an extra two
        * spaces. */
-      if(DPRINT_IDENT) {
+      if(DPRINT_INDENT) {
 	  ident.append("  ");
       }
       
