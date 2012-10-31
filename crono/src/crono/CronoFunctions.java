@@ -633,6 +633,10 @@ public enum CronoFunctions {
 	if(args.length != 1) { /*TODO: Remove this if/when numArgs is used */
 	    err("Wrong number of args (%d != 1) for PRINTSTR", args.length);
 	}
+	if(args[0] instanceof Symbol) {
+	    /* Hack Hack Hack Hack Hack */
+	    args[0] = env.get((Symbol)args[0]);
+	}
 	if(!(args[0] instanceof Cons)) {
 	    err("%s is not a cons of characters", args[0]);
 	}
@@ -643,7 +647,7 @@ public enum CronoFunctions {
 	    }
 	    builder.append(((CronoCharacter)t).ch);
 	}
-	System.out.println(builder.toString());
+	System.out.print(builder.toString());
 	return Nil.NIL;
     }
     public String toString() {
@@ -663,7 +667,7 @@ public enum CronoFunctions {
     public CronoType run(CronoType[] args, Environment env) {
 	/* Define a new struct */
 	if(!(args[0] instanceof Symbol)) {
-	    err("%s is not a valid struct symbol", args[0]);
+	    err("STRUCT: %s is not a valid struct symbol", args[0]);
 	}
 	CronoStruct struct = new CronoStruct(args[0].toString());
 	for(int i = 1; i < args.length; ++i) {
@@ -675,7 +679,11 @@ public enum CronoFunctions {
 		if(!(sym instanceof Symbol)) {
 		    err("%s is not a valid field symbol", sym);
 		}
-		struct.put(sym.toString(), c.cdr());
+		CronoType val = c.cdr();
+		if(val instanceof Cons) {
+		    val = ((Cons)val).car();
+		}
+		struct.put(sym.toString(), Interpreter.eval(val, env));
 	    }else {
 		err("%s is not a valid field symbol", args[i]);
 	    }
@@ -701,13 +709,13 @@ public enum CronoFunctions {
   SUBSTRUCT(new CronoFunction() {
     public CronoType run(CronoType[] args, Environment env) {
 	if(!(args[0] instanceof Symbol)) {
-	    err("%s is not a valid struct symbol", args[0]);
+	    err("SUBSTRUCT: %s is not a valid struct symbol", args[0]);
 	}
-	if(!(args[1] instanceof CronoStruct)) {
-	    err("%s is not a valid struct symbol", args[1]);
+	if(!(args[1] instanceof Symbol)) {
+	    err("SUBSTRUCT: %s is not a valid struct symbol", args[1]);
 	}
 	
-	CronoStruct parent = (CronoStruct)args[1];
+	CronoStruct parent = (CronoStruct)env.get((Symbol)args[1]);
 	CronoStruct struct = new CronoStruct(args[0].toString(), parent);
 	for(int i = 2; i < args.length; ++i) {
 	    if(args[i] instanceof Symbol) {
@@ -718,7 +726,11 @@ public enum CronoFunctions {
 		if(!(sym instanceof Symbol)) {
 		    err("%s is not a valid field symbol", sym);
 		}
-		struct.put(sym.toString(), c.cdr());
+		CronoType val = c.cdr();
+		if(val instanceof Cons) {
+		    val = ((Cons)val).car();
+		}
+		struct.put(sym.toString(), Interpreter.eval(val, env));
 	    }else {
 		err("%s is not a valid field symbol", args[i]);
 	    }
@@ -738,13 +750,13 @@ public enum CronoFunctions {
       return false;
     }
     public boolean evalArgs() {
-      return true;
+      return false;
     }
   }),
   NEWSTRUCT(new CronoFunction() {
     public CronoType run(CronoType[] args, Environment env) {
 	if(!(args[0] instanceof Symbol)) {
-	    err("%s is not a valid struct symbol", args[0]);
+	    err("NEWSTRUCT: %s is not a valid struct symbol", args[0]);
 	}
 	CronoStruct struct = ((CronoStruct)env.get((Symbol)args[0])).copy();
 	for(int i = 1; i < args.length; ++i) {
@@ -756,7 +768,11 @@ public enum CronoFunctions {
 		if(!(sym instanceof Symbol)) {
 		    err("%s is not a valid field symbol", sym);
 		}
-		struct.put(sym.toString(), c.cdr());
+		CronoType val = c.cdr();
+		if(val instanceof Cons) {
+		    val = ((Cons)val).car();
+		}
+		struct.put(sym.toString(), Interpreter.eval(val, env));
 	    }else {
 		err("%s is not a valid field symbol", args[i]);
 	    }
@@ -777,7 +793,7 @@ public enum CronoFunctions {
       return false;
     }
     public boolean evalArgs() {
-      return true;
+      return false;
     }
   }),
   ;
