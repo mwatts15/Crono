@@ -88,6 +88,7 @@ Cons string():
 	}
       }
     }
+    list.add(Nil.NIL);
     return new Cons(list);
   }
 }
@@ -101,7 +102,9 @@ Cons list():
 }
 {
  
-    c = string()
+    c = string() {
+      return c;
+    }
   | <LPAR>
   (
       c = list() {
