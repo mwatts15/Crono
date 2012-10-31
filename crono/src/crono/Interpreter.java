@@ -125,9 +125,10 @@ public class Interpreter {
                           arg = eval(arg, environment);
                           // Perform substitution.
                           if (arg instanceof Symbol &&
-                                  environment.containsKey((Symbol)arg)) {
+                                  environment.containsKey((Symbol)arg))
+                          {
                               arg = environment.get((Symbol)arg);
-                                  }
+                          }
                       }
                       argList.add(arg);
                   }
@@ -157,9 +158,8 @@ public class Interpreter {
                   Iterator<CronoType> valit = argList.iterator();
 
                   while(keyit.hasNext() && valit.hasNext()) {
-                      Symbol key = keyit.next();
-                      lf.args.remove(
                       env.put(keyit.next(), valit.next());
+                      keyit.remove();
                   }
                   if (keyit.hasNext()) {
                       /* Leave partially applied */
