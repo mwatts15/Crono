@@ -69,19 +69,35 @@
 (define <I> (x)
   x)
   
-%(K)onstant combinator
+%Constant combinator
 (define <K> (x y)
   x)
-  
+
+%General application combinator
 (define <S> (f g x)
   (f x (g x)) )
   
+%Function composition combinator
 (define <B> (f g x)
   (f (g x)) )
-  
-(define <C> (f g x)
-  (f x g) )
+
+%
+(define <C> (f x y)
+  (f y x) )
+
+%(define <Y> (f)
+%  (f (<Y> f)) )
+%Cannata's incorrect definition of Y combinator
+
+%Recursive function combinator
+(define <Z> (f)
+    ((\ (x) (f (\ (v) ((x x) v))))
+     (\ (x) (f (\ (v) ((x x) v))))))
 
 (define <Y> (f)
-  (f (<Y> f)) )
- 
+  (\ (x) (f (x x))) (\ (x) (f (x x))) )
+
+
+  
+(define <COND> (p f g x)
+  (if (p x) (f x) (g x)) )
