@@ -4,7 +4,6 @@ import crono.AbstractSyntax.Atom;
 
 //TODO:
 //    - could be replaced with an arbitrary precision Rational class
-//    - support for floating point
 //    - memoize numbers?
 public class CronoNumber implements Atom {
   public final Long num;
@@ -14,12 +13,13 @@ public class CronoNumber implements Atom {
   }
 
   public boolean equals(Object o) {
-    if (o instanceof CronoNumber) {
-      CronoNumber n = (CronoNumber)o;
-      return this.num.equals(n.num);
-    } else {
-      return false;
+    if(o instanceof CronoNumber) {
+      return (num == ((CronoNumber)o).num);
     }
+    if(o instanceof CronoFloat) {
+      return (((double)num) == ((CronoFloat)o).num);
+    }
+    return false;
   }
 
   public String toString() {
