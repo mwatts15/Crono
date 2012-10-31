@@ -41,6 +41,20 @@ public class LambdaFunction implements Function {
     this.args = args;
     this.environment = environment;
   }
+  /* clones the passed in function */
+  public LambdaFunction(LambdaFunction f)
+  {
+      /* statements shouldn't change, so doesn't need to be copied */
+      /* copy the args list */
+      List<Symbol> new_args = new ArrayList<Symbol>();
+      for (Symbol e: f.args)
+      {
+          new_args.add(e);
+      }
+      this.statements = f.statements;
+      this.args = new_args;
+      this.environment = new Environment(f.environment);
+  }
 
   public String toString() {
     StringBuilder sb = new StringBuilder();

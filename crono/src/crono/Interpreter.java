@@ -143,7 +143,7 @@ public class Interpreter {
                * Call function with arguments.
                */
               if (function instanceof LambdaFunction) {
-                  LambdaFunction lf = (LambdaFunction)function;
+                  LambdaFunction lf = new LambdaFunction((LambdaFunction)function);
                   Environment env;
                   if (CronoOptions.ENVIRONMENT_DYNAMIC) {
                       // Copy current environment.
@@ -173,6 +173,10 @@ public class Interpreter {
                   lf.environment.update(env);
                   if (curry)
                   {
+                      /*
+                       * return the function with arguments stuffed
+                       * into its environment
+                       */
                       result = lf;
                   }
                   else
