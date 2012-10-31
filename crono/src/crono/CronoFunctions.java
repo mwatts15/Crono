@@ -246,15 +246,26 @@ public enum CronoFunctions {
   }),
   ADD(new CronoFunction() {
     public CronoType run(CronoType[] args, Environment environment) {
-      long sum = 0;
-      for (CronoType ct : args){
-        if (!(ct instanceof CronoNumber)){
-          err("%s is not a number", ct);
-        }else {
-          sum += ((CronoNumber)ct).num;
-        }
+      if(args.length <= 1) {
+	  err("too few arguments to SUM: %s", Arrays.toString(args));
       }
-      return new CronoNumber(sum);
+      long lsum = 0;
+      double dsum = 0.0;
+      boolean promote = false;
+      for (CronoType ct : args){
+	if(ct instanceof CronoNumber) {
+	    lsum += ((CronoNumber)ct).num;
+	}else if(ct instanceof CronoFloat) {
+	    promote = true;
+	    dsum += ((CronoFloat)ct).num;
+	}else {
+	    err("%s is not a number", ct);
+	}
+      }
+      if(promote) {
+	  return new CronoFloat(((double)lsum) + dsum);
+      }
+      return new CronoNumber(lsum);
     }
 
     public String toString() {
@@ -270,20 +281,41 @@ public enum CronoFunctions {
       if (args.length < 1) {
         err("too few arguments to -: %s", Arrays.toString(args));
       } else if (args.length == 1) {
-        if (!(args[0] instanceof CronoNumber)) {
-          err("%s is not a number", args[0]);
-        }
-        return CronoNumber.valueOf(-((CronoNumber)args[0]).num);
+	if(args[0] instanceof CronoNumber) {
+	  return new CronoNumber(-((CronoNumber)args[0]).num);
+	}else if(args[0] instanceof CronoFloat) {
+	  return new CronoFloat(-((CronoFloat)args[0]).num);
+	}else {
+	  err("%s is not a number", args[0]);
+	}
       }
-      long difference = ((CronoNumber)args[0]).num;
-      for (CronoType ct : Arrays.copyOfRange(args, 1, args.length)){
-        if (!(ct instanceof CronoNumber)){
-          err("%s is not a number", ct);
-        }else {
-          difference -= ((CronoNumber)ct).num;
-        }
+      
+      double ddiff = 0.0;
+      long ldiff = 0;
+      boolean promote = false;
+      if(args[0] instanceof CronoNumber) {
+	  ldiff += ((CronoNumber)args[0]).num;
+      }else if(args[0] instanceof CronoFloat) {
+	  promote = true;
+	  ddiff += ((CronoFloat)args[0]).num;
+      }else {
+	  err("%s is not a number", args[0]);
       }
-      return new CronoNumber(difference);
+      
+      for(int i = 1; i < args.length; ++i) {
+	if(args[i] instanceof CronoNumber) {
+	  ldiff -= ((CronoNumber)args[i]).num;
+	}else if(args[i] instanceof CronoFloat) {
+	  promote = true;
+	  ddiff -= ((CronoFloat)args[i]).num;
+	}else {
+	  err("%s is not a number", args[i]);
+	}
+      }
+      if(promote) {
+	  return new CronoFloat(((double)ldiff) + ddiff);
+      }
+      return new CronoNumber(ldiff);
     }
 
     public String toString() {
@@ -296,15 +328,23 @@ public enum CronoFunctions {
   }),
   MULT(new CronoFunction() {
     public CronoType run(CronoType[] args, Environment environment) {
-      long product = 1;
+      long lprod = 1;
+      double dprod = 1.0;
+      boolean promote = false;
       for (CronoType ct : args){
-        if (!(ct instanceof CronoNumber)){
-          err("%s is not a number", ct);
-        }else {
-          product *= ((CronoNumber)ct).num;
-        }
+	if(ct instanceof CronoNumber) {
+	  lprod *= ((CronoNumber)ct).num;
+	}else if(ct instanceof CronoFloat) {
+	  promote = true;
+	  dprod *= ((CronoFloat)ct).num;
+	}else {
+	  err("%s is not a number", ct);
+	}
       }
-      return new CronoNumber(product);
+      if(promote) {
+	return new CronoFloat(((double)lprod) * dprod);
+      }
+      return new CronoNumber(lprod);
     }
 
     public String toString() {
@@ -319,19 +359,33 @@ public enum CronoFunctions {
     public CronoType run(CronoType[] args, Environment environment) {
       if (args.length < 2) {
         err("too few arguments to /: %s", Arrays.toString(args));
-      } else if (args.length > 2) {
-        err("too many arguments to /: %s", Arrays.toString(args));
       }
-      if (!(args[0] instanceof CronoNumber)) {
-        err("%s is not a number", args[0]);
+      
+      double result = 1.0;
+      boolean promote = false;
+      if(args[0] instanceof CronoNumber) {
+	result = ((double)((CronoNumber)args[0]).num);
+      }else if(args[0] instanceof CronoFloat) {
+	  promote = true;
+	result = ((CronoFloat)args[0]).num;
+      }else {
+	err("%s is not a number", args[0]);
       }
-      if (!(args[1] instanceof CronoNumber)) {
-        err("%s is not a number", args[1]);
+      
+      for(int i = 1; i < args.length; ++i) {
+	if(args[i] instanceof CronoNumber) {
+	  result /= ((double)((CronoNumber)args[i]).num);
+	}else if(args[i] instanceof CronoFloat) {
+	  promote = true;
+	  result /= ((CronoFloat)args[i]).num;
+	}else {
+	  err("%s is not a number", args[i]);
+	}
       }
-      CronoNumber n = (CronoNumber)args[0];
-      CronoNumber d = (CronoNumber)args[1];
-
-      return CronoNumber.valueOf(n.num / d.num);
+      if(promote) {
+	  return new CronoFloat(result);
+      }
+      return new CronoNumber((long)result);
     }
 
     public String toString() {
@@ -344,10 +398,10 @@ public enum CronoFunctions {
   }),
   EQ(new CronoFunction() {
     public CronoType run(CronoType[] args, Environment environment) {
-      if (args.length == 0) {
+      if (args.length < 2) {
         err("too few arguments to =: %s", Arrays.toString(args));
       }
-
+      
       boolean eq = true;
       CronoType prev = args[0];
       for(int i = 1; eq && i < args.length; i++) {
@@ -372,24 +426,38 @@ public enum CronoFunctions {
   }),
   LT(new CronoFunction() {
     public CronoType run(CronoType[] args, Environment environment) {
-      if (args.length == 0) {
+      if (args.length < 2) {
         err("too few arguments to <: %s", Arrays.toString(args));
       }
 
       boolean lt = true;
-      if (!(args[0] instanceof CronoNumber)) {
+      if (!(args[0] instanceof CronoNumber || args[0] instanceof CronoFloat)) {
         err("%s is not a number", args[0]);
       }
-      CronoNumber prev = (CronoNumber)args[0];
-      for(int i = 1; lt && i < args.length; i++) {
-        if (!(args[i] instanceof CronoNumber)) {
-          err("%s is not a number", args[i]);
-        }
-        CronoNumber n = (CronoNumber)args[i];
-        lt = prev.num < n.num;
-        prev = n;
+      boolean cmpdouble = false;
+      CronoType prev = (CronoType)args[0];
+      if(prev instanceof CronoFloat) {
+	  cmpdouble = true;
       }
-
+      for(int i = 1; lt && i < args.length; i++) {
+	if(args[i] instanceof CronoNumber) {
+	  if(cmpdouble) {
+	    lt = ((CronoFloat)prev).num < ((double)((CronoNumber)args[i]).num);
+	  }else {
+	    lt = ((CronoNumber)prev).num < ((CronoNumber)args[i]).num;
+	  }
+	}else if(args[i] instanceof CronoFloat) {
+	  if(cmpdouble) {
+	    lt = ((CronoFloat)prev).num < ((CronoFloat)args[i]).num;
+	  }else {
+	    lt = ((double)((CronoNumber)prev).num) < ((CronoFloat)args[i]).num;
+	  }
+	}else {
+	    err("%s is not a number", args[i]);
+	}
+        prev = args[i];
+      }
+      
       if (lt) {
         return Symbol.valueOf("T");
       } else {
@@ -399,6 +467,55 @@ public enum CronoFunctions {
 
     public String toString() {
       return "<";
+    }
+
+    public boolean evalArgs() {
+      return true;
+    }
+  }),
+  GT(new CronoFunction() {
+    public CronoType run(CronoType[] args, Environment environment) {
+      if (args.length < 2) {
+        err("too few arguments to >: %s", Arrays.toString(args));
+      }
+
+      boolean gt = true;
+      if (!(args[0] instanceof CronoNumber || args[0] instanceof CronoFloat)) {
+        err("%s is not a number", args[0]);
+      }
+      boolean cmpdouble = false;
+      CronoType prev = (CronoType)args[0];
+      if(prev instanceof CronoFloat) {
+	  cmpdouble = true;
+      }
+      for(int i = 1; gt && i < args.length; i++) {
+	if(args[i] instanceof CronoNumber) {
+	  if(cmpdouble) {
+	    gt = ((CronoFloat)prev).num > ((double)((CronoNumber)args[i]).num);
+	  }else {
+	    gt = ((CronoNumber)prev).num > ((CronoNumber)args[i]).num;
+	  }
+	}else if(args[i] instanceof CronoFloat) {
+	  if(cmpdouble) {
+	    gt = ((CronoFloat)prev).num > ((CronoFloat)args[i]).num;
+	  }else {
+	    gt = ((double)((CronoNumber)prev).num) > ((CronoFloat)args[i]).num;
+	  }
+	}else {
+	  err("%s is not a number", args[i]);
+	}
+        prev = args[i];
+      }
+      
+      if (gt) {
+        return Symbol.valueOf("T");
+      } else {
+        return NIL;
+      }
+    }
+
+    public String toString() {
+      return ">";
     }
 
     public boolean evalArgs() {

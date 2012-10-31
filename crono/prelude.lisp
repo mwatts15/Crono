@@ -61,8 +61,25 @@
     (mod (- x y) y)))
 % /math
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% whole number combinators
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Y, K, etc..
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% combinators
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%identity combinator
+(define <I> (x)
+  x)
+  
+%(K)onstant combinator
+(define <K> (x y)
+  x)
+  
+(define <S> (f g x)
+  (f x (g x)) )
+  
+(define <B> (f g x)
+  (f (g x)) )
+  
+(define <C> (f g x)
+  (f x g) )
+
+(define <Y> (f)
+  (f (<Y> f)) )
