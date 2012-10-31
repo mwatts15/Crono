@@ -25,11 +25,13 @@ import static crono.Nil.NIL;
 public enum CronoFunctions {
   CONS(new CronoFunction() {
     public CronoType run(CronoType[] args, Environment environment) {
+      /*
       if (args.length > 2) {
         err("too many arguments given to CONS: %s", Arrays.toString(args));
       } else if (args.length < 2) {
         err("too few arguments given to CONS: %s", Arrays.toString(args));
       }
+      */
 
       CronoType car = args[0];
       CronoType cdr = args[1];
@@ -622,6 +624,158 @@ public enum CronoFunctions {
       return "PRINT";
     }
 
+    public boolean evalArgs() {
+      return true;
+    }
+  }),
+  PRINTSTR(new CronoFunction() {
+    public CronoType run(CronoType[] args, Environment env) {
+	if(args.length != 1) { /*TODO: Remove this if/when numArgs is used */
+	    err("Wrong number of args (%d != 1) for PRINTSTR", args.length);
+	}
+	if(!(args[0] instanceof Cons)) {
+	    err("%s is not a cons of characters", args[0]);
+	}
+	StringBuilder builder = new StringBuilder();
+	for(CronoType t : ((Cons)args[0])) {
+	    if(!(t instanceof CronoCharacter)) {
+		err("Type Error: %s is not a CronoCharacter", args[0]);
+	    }
+	    builder.append(((CronoCharacter)t).ch);
+	}
+	System.out.println(builder.toString());
+	return Nil.NIL;
+    }
+    public String toString() {
+      return "PRINTSTR";
+    }
+    public int numArgs() {
+	return 1;
+    }
+    public boolean canCurry() {
+	return false;
+    }
+    public boolean evalArgs() {
+	return false;
+    }
+  }),
+  STRUCT(new CronoFunction() {
+    public CronoType run(CronoType[] args, Environment env) {
+	/* Define a new struct */
+	if(!(args[0] instanceof Symbol)) {
+	    err("%s is not a valid struct symbol", args[0]);
+	}
+	CronoStruct struct = new CronoStruct(args[0].toString());
+	for(int i = 1; i < args.length; ++i) {
+	    if(args[i] instanceof Symbol) {
+		struct.put(args[i].toString(), Nil.NIL);
+	    }else if(args[i] instanceof Cons) {
+		Cons c = (Cons)args[i];
+		CronoType sym = c.car();
+		if(!(sym instanceof Symbol)) {
+		    err("%s is not a valid field symbol", sym);
+		}
+		struct.put(sym.toString(), c.cdr());
+	    }else {
+		err("%s is not a valid field symbol", args[i]);
+	    }
+	}
+	
+	env.put((Symbol)args[0], struct);
+	
+	return struct; /*< You can actually modify the struct definition */
+    }
+    public String toString() {
+      return "STRUCT";
+    }
+    public int numArgs() {
+      return -2;
+    }
+    public boolean canCurry() {
+      return false;
+    }
+    public boolean evalArgs() {
+      return false;
+    }
+  }),
+  SUBSTRUCT(new CronoFunction() {
+    public CronoType run(CronoType[] args, Environment env) {
+	if(!(args[0] instanceof Symbol)) {
+	    err("%s is not a valid struct symbol", args[0]);
+	}
+	if(!(args[1] instanceof CronoStruct)) {
+	    err("%s is not a valid struct symbol", args[1]);
+	}
+	
+	CronoStruct parent = (CronoStruct)args[1];
+	CronoStruct struct = new CronoStruct(args[0].toString(), parent);
+	for(int i = 2; i < args.length; ++i) {
+	    if(args[i] instanceof Symbol) {
+		struct.put(args[i].toString(), Nil.NIL);
+	    }else if(args[i] instanceof Cons) {
+		Cons c = (Cons)args[i];
+		CronoType sym = c.car();
+		if(!(sym instanceof Symbol)) {
+		    err("%s is not a valid field symbol", sym);
+		}
+		struct.put(sym.toString(), c.cdr());
+	    }else {
+		err("%s is not a valid field symbol", args[i]);
+	    }
+	}
+	
+	env.put((Symbol)args[0], struct);
+	
+	return struct; /*< You can actually modify the struct definition */
+    }
+    public String toString() {
+      return "SUBSTRUCT";
+    }
+    public int numArgs() {
+      return -3;
+    }
+    public boolean canCurry() {
+      return false;
+    }
+    public boolean evalArgs() {
+      return true;
+    }
+  }),
+  NEWSTRUCT(new CronoFunction() {
+    public CronoType run(CronoType[] args, Environment env) {
+	if(!(args[0] instanceof Symbol)) {
+	    err("%s is not a valid struct symbol", args[0]);
+	}
+	CronoStruct struct = ((CronoStruct)env.get((Symbol)args[0])).copy();
+	for(int i = 1; i < args.length; ++i) {
+	    if(args[i] instanceof Symbol) {
+		struct.put(args[i].toString(), Nil.NIL);
+	    }else if(args[i] instanceof Cons) {
+		Cons c = (Cons)args[i];
+		CronoType sym = c.car();
+		if(!(sym instanceof Symbol)) {
+		    err("%s is not a valid field symbol", sym);
+		}
+		struct.put(sym.toString(), c.cdr());
+	    }else {
+		err("%s is not a valid field symbol", args[i]);
+	    }
+	}
+	
+	return struct;
+    }
+    public String toString() {
+      return "NEWSTRUCT";
+    }
+    public int numArgs() {
+      /* Newstruct just takes the name of the struct to make and a list
+       * of field value pairs */
+      return 2;
+    }
+    public boolean canCurry() {
+      /* In general, currying one arg functions shouldn't happen */
+      return false;
+    }
     public boolean evalArgs() {
       return true;
     }
