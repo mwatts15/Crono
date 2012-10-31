@@ -83,5 +83,5 @@
   (f x g) )
 
 (define <Y> (f)
-  (f (y f)) )
+  (f (<Y> f)) )
  
