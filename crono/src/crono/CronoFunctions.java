@@ -110,12 +110,11 @@ public enum CronoFunctions {
       } else if (args.length < 1) {
         err("too few arguments given to QUOTE: %s", Arrays.toString(args));
       }
-
       return args[0];
     }
 
     public String toString() {
-      return "'";
+      return "QUOTE";
     }
 
     public boolean evalArgs() {
@@ -407,55 +406,55 @@ public enum CronoFunctions {
     }
   }),
   SET(new CronoFunction() {
-    public CronoType run(CronoType[] args, Environment environment) {
-      if (args.length < 2) {
-        err("too few arguments to SET: %s", Arrays.toString(args));
-      }
-      if (args.length > 2) {
-        err("too many arguments to SET: %s", Arrays.toString(args));
-      }
-      if (!(args[0] instanceof Symbol)) {
-        err("SET: can only use symbols as keys, got %s", args[0]);
-      }
-      String key = ((Symbol)args[0]).toString();
-      CronoType condition = Interpreter.eval(args[1], environment);
-      boolean value = (condition != NIL);
+      public CronoType run(CronoType[] args, Environment environment) {
+          if (args.length < 2) {
+              err("too few arguments to SET: %s", Arrays.toString(args));
+          }
+          if (args.length > 2) {
+              err("too many arguments to SET: %s", Arrays.toString(args));
+          }
+          if (!(args[0] instanceof Symbol)) {
+              err("SET: can only use symbols as keys, got %s", args[0]);
+          }
+          String key = ((Symbol)args[0]).toString();
+          CronoType condition = Interpreter.eval(args[1], environment);
+          boolean value = (condition != NIL);
 
-      // TODO: possibly turn CronoOptions into an enum and use reflection to
-      //       set values.
-      // Wow, this is annoying to update.
-      if ("dprint_enable".equals(key)) {
-        CronoOptions.DPRINT_ENABLE = value;
-      } else if ("dprint_indent".equals(key)) {
-        CronoOptions.DPRINT_INDENT = value;
-      } else if ("dprint_show_atom_eval".equals(key)) {
-        CronoOptions.DPRINT_SHOW_ATOM_EVAL = value;
-      } else if ("environment_show".equals(key)) {
-        CronoOptions.ENVIRONMENT_SHOW = value;
-      } else if ("environment_show_builtin".equals(key)) {
-        CronoOptions.ENVIRONMENT_SHOW_BUILTIN = value;
-      } else if ("environment_dynamic".equals(key)) {
-        CronoOptions.ENVIRONMENT_DYNAMIC = value;
-      } else if ("environment_show_types".equals(key)) {
-        CronoOptions.ENVIRONMENT_SHOW_TYPES = value;
-      } else if ("environment_multiline".equals(key)) {
-        CronoOptions.ENVIRONMENT_MULTILINE = value;
-      } else if ("lambda_show_closure".equals(key)) {
-        CronoOptions.LAMBDA_SHOW_CLOSURE = value;
-      } else if ("parser_dprint".equals(key)) {
-        CronoOptions.PARSER_DPRINT = value;
+          // TODO: possibly turn CronoOptions into an enum and use reflection to
+          //       set values.
+          // Wow, this is annoying to update.
+          if ("dprint_enable".equals(key)) {
+              CronoOptions.DPRINT_ENABLE = value;
+          } else if ("dprint_indent".equals(key)) {
+              CronoOptions.DPRINT_INDENT = value;
+          } else if ("dprint_show_atom_eval".equals(key)) {
+              CronoOptions.DPRINT_SHOW_ATOM_EVAL = value;
+          } else if ("environment_show".equals(key)) {
+              CronoOptions.ENVIRONMENT_SHOW = value;
+          } else if ("environment_show_builtin".equals(key)) {
+              CronoOptions.ENVIRONMENT_SHOW_BUILTIN = value;
+          } else if ("environment_dynamic".equals(key)) {
+              CronoOptions.ENVIRONMENT_DYNAMIC = value;
+          } else if ("environment_show_types".equals(key)) {
+              CronoOptions.ENVIRONMENT_SHOW_TYPES = value;
+          } else if ("environment_multiline".equals(key)) {
+              CronoOptions.ENVIRONMENT_MULTILINE = value;
+          } else if ("lambda_show_closure".equals(key)) {
+              CronoOptions.LAMBDA_SHOW_CLOSURE = value;
+          } else if ("parser_dprint".equals(key)) {
+              CronoOptions.PARSER_DPRINT = value;
+          }
+
+          return NIL;
       }
 
-      return NIL;
-    }
+      public String toString() {
+          return "SET";
+      }
 
-    public String toString() {
-      return "SET";
-    }
-
-    public boolean evalArgs() {
-      return false;
-    }
+      public boolean evalArgs() {
+          return false;
+      }
   }),
   LOAD(new CronoFunction() {
     public CronoType run(CronoType[] args, Environment environment) {

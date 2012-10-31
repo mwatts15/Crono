@@ -74,6 +74,8 @@ public class Environment implements Iterable<Symbol> {
           CronoOptions.ENVIRONMENT_SHOW_BUILTIN) {
         result.append(key.toString());
         result.append(": ");
+        /* Have to be careful we aren't printing a
+         * recursive procedure's closure on this one */
         result.append(val.toString());
         if (CronoOptions.ENVIRONMENT_SHOW_TYPES) {
           result.append(" [");

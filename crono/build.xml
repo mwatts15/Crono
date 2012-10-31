@@ -11,9 +11,9 @@
 
   <target name="crono">
     <mkdir dir="bin"/>
-    <javacc target="src/crono/Parser.jj"
-            javacchome="${env.JAVACC_HOME}"
-            outputdirectory="./src/crono"/>
+    <exec dir="src/crono" executable="javacc" >
+        <arg line="src/crono/Parser.jj" />
+    </exec>
     <javac srcdir="./src" destdir="./bin"/>
   </target>
 

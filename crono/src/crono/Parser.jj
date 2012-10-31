@@ -38,6 +38,7 @@ TOKEN:
 {
     < LPAR : "(" >
   | < RPAR : ")" >
+  | < QUOTE : "'" >
   | < INTEGER : (["0"-"9"])+ | "-" (["0"-"9"])+ >
   | < SYMBOL : ["a"-"z", "A"-"Z", "~", "`", "!", "@", "#", "$", "/", "^", "&",
                 "*", "_", "-", "=", "+", "{", "}", "[", "]", "|", "\\", ":",
@@ -57,7 +58,8 @@ Atom atom():
 {
     <NIL>         { return Nil.NIL; }
   | n = <INTEGER> { return new CronoNumber(Long.valueOf(n.image)); }
-  | n = <SYMBOL>      { return Symbol.valueOf(n.image); }
+  | n = <SYMBOL>  { return Symbol.valueOf(n.image); }
+  | <QUOTE> n = <SYMBOL> { return Symbol.valueOf(n.image); }
 }
 
 Cons list():
@@ -65,9 +67,11 @@ Cons list():
   Atom a;
   Cons c;
   List<CronoType> l = new ArrayList<CronoType>();
+  boolean quoted = false;
 }
 {
-  <LPAR>
+(<QUOTE> { quoted = true; }
+  <LPAR>| <LPAR>)
   (
       c = list() {
         if (CronoOptions.PARSER_DPRINT) {

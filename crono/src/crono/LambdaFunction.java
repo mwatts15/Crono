@@ -19,6 +19,8 @@ import crono.Symbol;
  */
 public class LambdaFunction implements Function {
   public final List<Symbol> args;
+  /* Crono functions allow for a list of statements
+   * without a begin block */
   public final List<CronoType> statements;
   public final Environment environment;
 
@@ -43,7 +45,8 @@ public class LambdaFunction implements Function {
   public String toString() {
     StringBuilder sb = new StringBuilder();
 
-    sb.append("(\\ (");
+    sb.append("(closure (");
+    /* un-bound arguments */
     Iterator<Symbol> argit = args.iterator();
     while(argit.hasNext()) {
       sb.append(argit.next().toString());
@@ -61,9 +64,13 @@ public class LambdaFunction implements Function {
     }
     sb.append(")");
 
+    /* bound arguments and inherited environment
+     * should be SHOW_EVIRONMENT, but whatevers*/
     if (CronoOptions.LAMBDA_SHOW_CLOSURE) {
       sb.append(" [");
+      /* The environment */
       sb.append(closure());
+      //environment.toString();
       sb.append("]");
     }
 

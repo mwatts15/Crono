@@ -16,7 +16,7 @@ public class CronoOptions {
   public static boolean DPRINT_INDENT = true;
 
   // Whether or not to show atoms being evaluated.
-  public static boolean DPRINT_SHOW_ATOM_EVAL = false;
+  public static boolean DPRINT_SHOW_ATOM_EVAL = true;
 
   // Level of indention to use when using dprint.
   public static int DPRINT_I = 0;
@@ -31,7 +31,7 @@ public class CronoOptions {
   public static boolean ENVIRONMENT_DYNAMIC = false;
 
   // Whether or not to print types in the environment.
-  public static boolean ENVIRONMENT_SHOW_TYPES = false;
+  public static boolean ENVIRONMENT_SHOW_TYPES = true;
 
   // Whether or not to use multiple lines when printing the environment.
   public static boolean ENVIRONMENT_MULTILINE = true;
