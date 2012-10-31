@@ -7,6 +7,7 @@ PARSER_BEGIN(Parser)
 package crono;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 // PROTIP: we can't statically import NIL because javacc gives it special
@@ -16,7 +17,8 @@ import crono.Cons;
 import crono.CronoOptions;
 import crono.Nil;
 
-public class Parser {}
+public class Parser {
+}
 
 PARSER_END(Parser)
 
@@ -38,13 +40,11 @@ TOKEN:
 {
     < LPAR : "(" >
   | < RPAR : ")" >
-  | < INTEGER : (["0"-"9"])+ | "-" (["0"-"9"])+ >
-  | < SYMBOL : ["a"-"z", "A"-"Z", "~", "`", "!", "@", "#", "$", "/", "^", "&",
-                "*", "_", "-", "=", "+", "{", "}", "[", "]", "|", "\\", ":",
-                ";", "<", ">", ",", ".", "?", "'", "\""](["a"-"z", "A"-"Z",
-                "0"-"9", "~", "`", "!", "@", "#", "$", "/", "^", "&", "*", "_",
-                "-", "=", "+", "{", "}", "[", "]", "|", "\\", ":", ";", "<",
-                ">", ",", ".", "?", "'", "\""])* >
+  | < INTEGER : ("+" | "-")? (["0"-"9"])+ >
+  | < FLOAT : (["+", "-"])? (["0"-"9"])+ "." (["0"-"9"])+ >
+  | < CHAR : "'" ([" "-"~"] | ("\\" ~["\n", "\r"])) "'" >
+  | < STRING : "\"" ("\\" ~["\n"] | ~["\"", "\n"])* "\"" >
+  | < SYMBOL : ["!"-"'", "*"-"/", ":"-"~"] (["!"-"'", "*"-"~"])* >
 }
 
 TOKEN:
@@ -57,17 +57,55 @@ Atom atom():
 {
     <NIL>         { return Nil.NIL; }
   | n = <INTEGER> { return new CronoNumber(Long.valueOf(n.image)); }
-  | n = <SYMBOL>      { return Symbol.valueOf(n.image); }
+  | n = <FLOAT>   { return new CronoFloat(Double.valueOf(n.image)); }
+  | n = <CHAR>    {
+      if(n.image.length() == 4) { /*< '\n' */
+        return CronoCharacter.escape(n.image.charAt(2));
+      }
+      return new CronoCharacter(n.image.charAt(1));
+    }
+  | n = <SYMBOL>  { return Symbol.valueOf(n.image); }
+}
+
+Cons string():
+{ Token n; }
+{
+  n = <STRING> {
+    List<CronoType> list = new LinkedList<CronoType>();
+    int strlen = n.image.length() - 1;
+    boolean escaped = false;
+    char _c;
+    for(int i = 1; i < strlen; ++i) {
+      _c = n.image.charAt(i);
+      if(escaped) {
+        list.add(CronoCharacter.escape(_c));
+	escaped = false;
+      }else {
+        if(_c == '\\') {
+	  escaped = true;
+	}else {
+	  list.add(new CronoCharacter(_c));
+	}
+      }
+    }
+    list.add(Nil.NIL);
+    return new Cons(list);
+  }
 }
 
 Cons list():
 {
+  Token n;
   Atom a;
   Cons c;
   List<CronoType> l = new ArrayList<CronoType>();
 }
 {
-  <LPAR>
+ 
+    c = string() {
+      return c;
+    }
+  | <LPAR>
   (
       c = list() {
         if (CronoOptions.PARSER_DPRINT) {
