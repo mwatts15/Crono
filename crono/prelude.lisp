@@ -89,7 +89,7 @@
 %  (f (<Y> f)) )
 %Cannata's incorrect definition of Y combinator
 
-%Recursive function combinator
+%Recursive function 
 (define <Z> (f)
     ((\ (x) (f (\ (v) ((x x) v))))
      (\ (x) (f (\ (v) ((x x) v))))))
