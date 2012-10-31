@@ -60,3 +60,28 @@
     x
     (mod (- x y) y)))
 % /math
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% combinators
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%identity combinator
+(define <I> (x)
+  x)
+  
+%(K)onstant combinator
+(define <K> (x y)
+  x)
+  
+(define <S> (f g x)
+  (f x (g x)) )
+  
+(define <B> (f g x)
+  (f (g x)) )
+  
+(define <C> (f g x)
+  (f x g) )
+
+(define <Y> (f)
+  (f (y f)) )
+ 
