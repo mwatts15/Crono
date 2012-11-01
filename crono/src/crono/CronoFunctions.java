@@ -23,7 +23,7 @@ import static crono.Nil.NIL;
  * Container class for all built in functions.
  */
 public enum CronoFunctions {
-  CONS(new CronoFunction() {
+ CONS(new CronoFunction() {
     public CronoType run(CronoType[] args, Environment environment) {
       if (args.length > 2) {
         err("too many arguments given to CONS: %s", Arrays.toString(args));
@@ -47,6 +47,10 @@ public enum CronoFunctions {
       return "CONS";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -73,6 +77,10 @@ public enum CronoFunctions {
       return "CAR";
     }
 
+    public int arity()
+    {
+        return 1;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -98,6 +106,10 @@ public enum CronoFunctions {
     public String toString() {
       return "CDR";
     }
+    public int arity()
+    {
+        return 1;
+    }
 
     public boolean evalArgs() {
       return true;
@@ -115,6 +127,10 @@ public enum CronoFunctions {
 
     public String toString() {
       return "QUOTE";
+    }
+    public int arity()
+    {
+        return 1;
     }
 
     public boolean evalArgs() {
@@ -138,6 +154,10 @@ public enum CronoFunctions {
 
     public String toString() {
       return "DEFINE";
+    }
+    public int arity()
+    {
+        return 3;
     }
 
     public boolean evalArgs() {
@@ -172,6 +192,10 @@ public enum CronoFunctions {
       return "\\";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return false;
     }
@@ -217,6 +241,10 @@ public enum CronoFunctions {
       return "LET";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return false;
     }
@@ -238,6 +266,10 @@ public enum CronoFunctions {
 
     public String toString() {
       return "IF";
+    }
+    public int arity()
+    {
+        return 3;
     }
 
     public boolean evalArgs() {
@@ -272,6 +304,10 @@ public enum CronoFunctions {
       return "+";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -289,7 +325,7 @@ public enum CronoFunctions {
 	  err("%s is not a number", args[0]);
 	}
       }
-      
+
       double ddiff = 0.0;
       long ldiff = 0;
       boolean promote = false;
@@ -301,7 +337,7 @@ public enum CronoFunctions {
       }else {
 	  err("%s is not a number", args[0]);
       }
-      
+
       for(int i = 1; i < args.length; ++i) {
 	if(args[i] instanceof CronoNumber) {
 	  ldiff -= ((CronoNumber)args[i]).num;
@@ -322,6 +358,10 @@ public enum CronoFunctions {
       return "-";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -351,6 +391,10 @@ public enum CronoFunctions {
       return "*";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -360,7 +404,7 @@ public enum CronoFunctions {
       if (args.length < 2) {
         err("too few arguments to /: %s", Arrays.toString(args));
       }
-      
+
       double result = 1.0;
       boolean promote = false;
       if(args[0] instanceof CronoNumber) {
@@ -371,7 +415,7 @@ public enum CronoFunctions {
       }else {
 	err("%s is not a number", args[0]);
       }
-      
+
       for(int i = 1; i < args.length; ++i) {
 	if(args[i] instanceof CronoNumber) {
 	  result /= ((double)((CronoNumber)args[i]).num);
@@ -392,6 +436,10 @@ public enum CronoFunctions {
       return "/";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -401,7 +449,7 @@ public enum CronoFunctions {
       if (args.length < 2) {
         err("too few arguments to =: %s", Arrays.toString(args));
       }
-      
+
       boolean eq = true;
       CronoType prev = args[0];
       for(int i = 1; eq && i < args.length; i++) {
@@ -416,6 +464,10 @@ public enum CronoFunctions {
       }
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public String toString() {
       return "=";
     }
@@ -457,12 +509,16 @@ public enum CronoFunctions {
 	}
         prev = args[i];
       }
-      
+
       if (lt) {
         return Symbol.valueOf("T");
       } else {
         return NIL;
       }
+    }
+    public int arity()
+    {
+        return 2;
     }
 
     public String toString() {
@@ -506,12 +562,17 @@ public enum CronoFunctions {
 	}
         prev = args[i];
       }
-      
+
       if (gt) {
         return Symbol.valueOf("T");
       } else {
         return NIL;
       }
+    }
+
+    public int arity()
+    {
+        return 2;
     }
 
     public String toString() {
@@ -569,6 +630,10 @@ public enum CronoFunctions {
           return "SET";
       }
 
+    public int arity()
+    {
+        return 2;
+    }
       public boolean evalArgs() {
           return false;
       }
@@ -600,6 +665,10 @@ public enum CronoFunctions {
     public String toString() {
       return "LOAD";
     }
+    public int arity()
+    {
+        return 1;
+    }
 
     public boolean evalArgs() {
       return true;
@@ -620,6 +689,10 @@ public enum CronoFunctions {
 
     public String toString() {
       return "PRINT";
+    }
+    public int arity()
+    {
+        return 2;
     }
 
     public boolean evalArgs() {

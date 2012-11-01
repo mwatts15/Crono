@@ -1,2 +1,2 @@
 cd bin
-java crono.Crono
+java crono.Crono ../prelude.lisp

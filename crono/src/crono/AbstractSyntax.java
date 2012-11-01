@@ -20,5 +20,6 @@ public class AbstractSyntax {
    */
   public static interface CronoFunction extends Function {
     public CronoType run(CronoType[] args, Environment environment);
+    public int arity();
   }
 }

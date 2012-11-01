@@ -12,7 +12,7 @@
   <target name="crono">
     <mkdir dir="bin"/>
     <exec dir="src/crono" executable="javacc" >
-        <arg line="src/crono/Parser.jj" />
+        <arg line="Parser.jj" />
     </exec>
     <javac srcdir="./src" destdir="./bin"/>
   </target>

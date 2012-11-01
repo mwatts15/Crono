@@ -33,16 +33,16 @@ public class Interpreter {
     return run(function, function.environment.update(globals));
   }
 
-  public static CronoType run(LambdaFunction function,
-      Environment environment) {
-    CronoType result = NIL;
+  public static CronoType run(LambdaFunction function, Environment environment)
+  {
+      CronoType result = NIL;
 
-    CronoOptions.dprint("[[\n%s\n]]\n", function.toString());
-    for(CronoType statement : function.statements) {
-      result = eval(statement, environment);
-    }
+      CronoOptions.dprint("%s\n", function.toString());
 
-    return result;
+      for (CronoType statement : function.statements) {
+          result = eval(statement, environment);
+      }
+      return result;
   }
 
   public static CronoType eval(CronoType statement, Environment environment) {
@@ -50,9 +50,6 @@ public class Interpreter {
       CronoType result = NIL;
       boolean curry = false;
 
-      /*
-       */
-      // ATOM
       if (statement instanceof Atom) {
 /*
  *          if (CronoOptions.DPRINT_SHOW_ATOM_EVAL) {
@@ -100,7 +97,8 @@ public class Interpreter {
               // Lookup function.
               CronoType f = eval(cons.car(), environment);
               Function function = null;
-              if (f instanceof Symbol) {
+              if (f instanceof Symbol)
+              {
                   Symbol funcKey = (Symbol)f;
                   CronoType val = environment.get(funcKey);
                   if (val instanceof Function) {
@@ -108,9 +106,18 @@ public class Interpreter {
                   } else {
                       err("%s is not a function", val);
                   }
-              } else if (f instanceof Function) {
+              }
+              else if (f instanceof Function)
+              {
                   function = (Function)f;
-              } else {
+              }
+              else if (f instanceof Cons)
+              {
+                  // try to turn it into a function
+                  function = (Function)eval(f, environment);
+              }
+              else
+              {
                   err("%s is not a function name.", f);
               }
 
@@ -183,10 +190,31 @@ public class Interpreter {
                   {
                       result = run(lf);//, env);
                   }
-              } else if (function instanceof CronoFunction) {
-                  /* TODO these probabli need to be curried too :P */
+              }
+              else if (function instanceof CronoFunction)
+              {
                   CronoFunction cf = (CronoFunction)function;
-                  result = cf.run(argList.toArray(new CronoType[] {}), environment);
+                  if (cf.arity() > argList.size())
+                  {
+                      // put in the arguments
+                      // move on...
+                      List<CronoType> body = new ArrayList<CronoType>();
+                      List<Symbol> args = new ArrayList<Symbol>();
+                      Cons statement_args = Nil.NIL;
+                      for (int i = 0; i < cf.arity(); i++)
+                      {
+                          Symbol s = Symbol.valueOf("_" + Integer.toString(i));
+                          args.add(0, s);
+                          statement_args = Cons.cons(s, statement_args);
+                      }
+                      body.add(Cons.cons(cf, statement_args));
+                      result = cons.cdr();
+                      result = Cons.cons((CronoType) new LambdaFunction(body, args), (Cons) result);
+                  }
+                  else
+                  {
+                      result = cf.run(argList.toArray(new CronoType[] {}), environment);
+                  }
               }
           }
           CronoOptions.DPRINT_I--;
