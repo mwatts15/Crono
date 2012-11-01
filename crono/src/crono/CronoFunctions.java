@@ -726,7 +726,7 @@ public enum CronoFunctions {
     public String toString() {
       return "PRINTSTR";
     }
-    public int numArgs() {
+    public int arity() {
 	return 1;
     }
     public boolean canCurry() {
@@ -761,15 +761,15 @@ public enum CronoFunctions {
 		err("%s is not a valid field symbol", args[i]);
 	    }
 	}
-	
+
 	env.put((Symbol)args[0], struct);
-	
+
 	return struct; /*< You can actually modify the struct definition */
     }
     public String toString() {
       return "STRUCT";
     }
-    public int numArgs() {
+    public int arity() {
       return -2;
     }
     public boolean canCurry() {
@@ -787,7 +787,7 @@ public enum CronoFunctions {
 	if(!(args[1] instanceof Symbol)) {
 	    err("SUBSTRUCT: %s is not a valid struct symbol", args[1]);
 	}
-	
+
 	CronoStruct parent = (CronoStruct)env.get((Symbol)args[1]);
 	CronoStruct struct = new CronoStruct(args[0].toString(), parent);
 	for(int i = 2; i < args.length; ++i) {
@@ -808,15 +808,15 @@ public enum CronoFunctions {
 		err("%s is not a valid field symbol", args[i]);
 	    }
 	}
-	
+
 	env.put((Symbol)args[0], struct);
-	
+
 	return struct; /*< You can actually modify the struct definition */
     }
     public String toString() {
       return "SUBSTRUCT";
     }
-    public int numArgs() {
+    public int arity() {
       return -3;
     }
     public boolean canCurry() {
@@ -850,13 +850,13 @@ public enum CronoFunctions {
 		err("%s is not a valid field symbol", args[i]);
 	    }
 	}
-	
+
 	return struct;
     }
     public String toString() {
       return "NEWSTRUCT";
     }
-    public int numArgs() {
+    public int arity() {
       /* Newstruct just takes the name of the struct to make and a list
        * of field value pairs */
       return 2;
