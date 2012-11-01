@@ -161,7 +161,6 @@ public class Interpreter {
           result = cf.run(argList.toArray(new CronoType[] {}), environment);
         }
       }
-	  skipEval:
       CronoOptions.DPRINT_I--;
       CronoOptions.dprint("Result: %s\n", result);
     } else {
