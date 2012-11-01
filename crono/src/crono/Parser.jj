@@ -40,6 +40,7 @@ TOKEN:
 {
     < LPAR : "(" >
   | < RPAR : ")" >
+  | < QUOTE : "'" >
   | < INTEGER : ("+" | "-")? (["0"-"9"])+ >
   | < FLOAT : (["+", "-"])? (["0"-"9"])+ "." (["0"-"9"])+ >
   | < CHAR : "'" ([" "-"~"] | ("\\" ~["\n", "\r"])) "'" >
@@ -99,9 +100,9 @@ Cons list():
   Atom a;
   Cons c;
   List<CronoType> l = new ArrayList<CronoType>();
+  boolean quoted = false;
 }
 {
- 
     c = string() {
       return c;
     }

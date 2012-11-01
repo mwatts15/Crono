@@ -5,3 +5,4 @@ To run crono:
   java crono.Crono [<file>]
 
 All source files are located in src/crono. All output files are put in bin/.
+(note that bin gets cleaned out on each build)

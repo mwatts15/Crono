@@ -33,141 +33,206 @@ public class Interpreter {
     return run(function, function.environment.update(globals));
   }
 
-  public static CronoType run(LambdaFunction function,
-      Environment environment) {
-    CronoType result = NIL;
+  public static CronoType run(LambdaFunction function, Environment environment)
+  {
+      CronoType result = NIL;
 
-    for(CronoType statement : function.statements) {
-      result = eval(statement, environment);
-    }
+      CronoOptions.dprint("%s\n", function.toString());
 
-    return result;
+      for (CronoType statement : function.statements) {
+          result = eval(statement, environment);
+      }
+      return result;
   }
 
   public static CronoType eval(CronoType statement, Environment environment) {
 
-    CronoType result = NIL;
+      CronoType result = NIL;
+      boolean curry = false;
 
-    if (statement instanceof Atom) {
-      if (CronoOptions.DPRINT_SHOW_ATOM_EVAL) {
-        CronoOptions.dprint("Evaluating: %s\n", statement);
-        CronoOptions.DPRINT_I++;
-
-        if (CronoOptions.ENVIRONMENT_SHOW) {
-          if (environment.toString().length() > 0) {
-            CronoOptions.dprint("Environment:\n%s\n", environment);
+      if (statement instanceof Atom) {
+/*
+ *          if (CronoOptions.DPRINT_SHOW_ATOM_EVAL) {
+ *              CronoOptions.dprint("Evaluating: %s\n", statement);
+ *              CronoOptions.DPRINT_I++;
+ *
+ *              if (CronoOptions.ENVIRONMENT_SHOW) {
+ *                  if (environment.toString().length() > 0) {
+ *                      CronoOptions.dprint("Environment:\n%s\n", environment);
+ *                  } else {
+ *                      CronoOptions.dprint("Environment: empty\n");
+ *                  }
+ *              }
+ *          }
+ */
+          if (statement instanceof Symbol && environment.containsKey((Symbol) statement)) {
+              result = environment.get((Symbol)statement);
           } else {
-            CronoOptions.dprint("Environment: empty\n");
+              result = statement;
           }
-        }
+          /*
+           *if (CronoOptions.DPRINT_SHOW_ATOM_EVAL) {
+           *    CronoOptions.DPRINT_I--;
+           *    CronoOptions.dprint("Result: %s\n", result);
+           *}
+           */
       }
-      if (statement instanceof Symbol &&
-          environment.containsKey((Symbol) statement)) {
-        result = environment.get((Symbol)statement);
-      } else {
-        result = statement;
-      }
-      if (CronoOptions.DPRINT_SHOW_ATOM_EVAL) {
-        CronoOptions.DPRINT_I--;
-        CronoOptions.dprint("Result: %s\n", result);
-      }
-    } else if (statement instanceof Cons) {
-      CronoOptions.dprint("Evaluating: %s\n", statement);
-      CronoOptions.DPRINT_I++;
-
-      if (CronoOptions.ENVIRONMENT_SHOW) {
-        if (environment.toString().length() > 0) {
-          CronoOptions.dprint("Environment:\n%s\n", environment);
-        } else {
-          CronoOptions.dprint("Environment: empty\n");
-        }
-      }
-
-      Cons cons = (Cons)statement;
-	  charEval:
-      if (cons != NIL) {
-        // Lookup function.
-        CronoType f = eval(cons.car(), environment);
-        Function function = null;
-        if (f instanceof Symbol) {
-          Symbol funcKey = (Symbol)f; // MORE LIKE FUNKAAAAAAY
-          CronoType val = environment.get(funcKey);
-          if (val instanceof Function) {
-            function = (Function)val;
-          } else {
-            err("%s is not a function", val);
-          }
-        } else if (f instanceof Function) {
-          function = (Function)f;
-        } else if (f instanceof CronoCharacter){
-		  //err("%s is a character", f);
-		  result = cons;
-		  cons = NIL;
-		  break charEval;
-		} else {
-          err("%s is not a function name.", f);
-        }
-
-        // Evaluate members.
-        CronoType cdr = cons.cdr();
-        List<CronoType> argList = new ArrayList<CronoType>();
-        if (cdr instanceof Cons) {
-          Cons args = (Cons)cdr;
-          for(CronoType arg : args) {
-            // Perform argument evaluation.
-            if (function.evalArgs()) {
-              arg = eval(arg, environment);
-              // Perform substitution.
-              if (arg instanceof Symbol &&
-                  environment.containsKey((Symbol)arg)) {
-                arg = environment.get((Symbol)arg);
+      else if (statement instanceof Cons)
+      {
+/*
+ *          CronoOptions.dprint("Evaluating: %s\n", statement);
+ *          CronoOptions.DPRINT_I++;
+ *
+ *          if (CronoOptions.ENVIRONMENT_SHOW) {
+ *              if (environment.toString().length() > 0) {
+ *                  CronoOptions.dprint("Environment:\n%s\n", environment);
+ *              } else {
+ *                  CronoOptions.dprint("Environment: empty\n");
+ *              }
+ *          }
+ *
+ */
+          Cons cons = (Cons)statement;
+          if (cons != NIL) {
+              // Lookup function.
+              CronoType f = eval(cons.car(), environment);
+              Function function = null;
+              if (f instanceof Symbol)
+              {
+                  Symbol funcKey = (Symbol)f;
+                  CronoType val = environment.get(funcKey);
+                  if (val instanceof Function) {
+                      function = (Function)val;
+                  } else {
+                      err("%s is not a function", val);
+                  }
               }
-            }
-            argList.add(arg);
-          }
-        } else {
-          if (function.evalArgs()) {
-            cdr = eval(cdr, environment);
-          }
-          argList.add(cdr);
-        }
+              else if (f instanceof Function)
+              {
+                  function = (Function)f;
+              }
+              else if (f instanceof Cons)
+              {
+                  // try to turn it into a function
+                  function = (Function)eval(f, environment);
+              }
+              else
+              {
+                  err("%s is not a function name.", f);
+              }
 
-        // Call function with arguments.
-        if (function instanceof LambdaFunction) {
-          LambdaFunction lf = (LambdaFunction)function;
-          Environment env;
-          if (CronoOptions.ENVIRONMENT_DYNAMIC) {
-            // Copy current environment.
-            env = new Environment(environment);
-          } else {
-            // Copy lambda's environment.
-            env = new Environment(lf.environment);
+              // Evaluate members.
+              CronoType cdr = cons.cdr();
+              List<CronoType> argList = new ArrayList<CronoType>();
+              if (cdr instanceof Cons) {
+                  Cons args = (Cons)cdr;
+                  for(CronoType arg : args) {
+                      // Perform argument evaluation.
+                      if (function.evalArgs()) {
+                          arg = eval(arg, environment);
+                          // Perform substitution.
+                          if (arg instanceof Symbol &&
+                                  environment.containsKey((Symbol)arg))
+                          {
+                              arg = environment.get((Symbol)arg);
+                          }
+                      }
+                      argList.add(arg);
+                  }
+              } else {
+                  if (function.evalArgs()) {
+                      cdr = eval(cdr, environment);
+                  }
+                  argList.add(cdr);
+              }
+
+              /*
+               * Call function with arguments.
+               */
+              if (function instanceof LambdaFunction) {
+                  LambdaFunction lf = new LambdaFunction((LambdaFunction)function);
+                  Environment env;
+                  if (CronoOptions.ENVIRONMENT_DYNAMIC) {
+                      // Copy current environment.
+                      env = new Environment(environment);
+                  } else {
+                      // Copy lambda's environment.
+                      env = new Environment(lf.environment);
+                  }
+
+                  // Add argument mapping.
+                  Iterator<Symbol> keyit = lf.args.iterator();
+                  Iterator<CronoType> valit = argList.iterator();
+
+                  while(keyit.hasNext() && valit.hasNext()) {
+                      env.put(keyit.next(), valit.next());
+                      keyit.remove();
+                  }
+                  if (keyit.hasNext()) {
+                      /* Leave partially applied */
+                      //err("too few arguments given to function: %s", function);
+                      curry = true;
+                  }
+                  if (valit.hasNext()) {
+                      err("too many arguments given to function: %s", function);
+                  }
+                  /* add the applied arguments */
+                  lf.environment.update(env);
+                  if (curry)
+                  {
+                      /*
+                       * return the function with arguments stuffed
+                       * into its environment
+                       */
+                      result = lf;
+                  }
+                  else
+                  {
+                      result = run(lf);//, env);
+                  }
+              }
+              else if (function instanceof CronoFunction)
+              {
+                  CronoFunction cf = (CronoFunction)function;
+                  if (cf.arity() > argList.size())
+                  {
+                      // put in the arguments
+                      // move on...
+                      List<CronoType> body = new ArrayList<CronoType>();
+                      List<Symbol> args = new ArrayList<Symbol>();
+                      Cons statement_args = Nil.NIL;
+                      for (int i = 0; i < cf.arity(); i++)
+                      {
+                          Symbol s = Symbol.valueOf("_" + Integer.toString(i));
+                          args.add(0, s);
+                          statement_args = Cons.cons(s, statement_args);
+                      }
+                      body.add(Cons.cons(cf, statement_args));
+                      result = cons.cdr();
+                      result = Cons.cons((CronoType) new LambdaFunction(body, args), (Cons) result);
+                  }
+                  else
+                  {
+                      result = cf.run(argList.toArray(new CronoType[] {}), environment);
+                  }
+              }
           }
-          // Add argument mapping.
-          Iterator<Symbol> keyit = lf.args.iterator();
-          Iterator<CronoType> valit = argList.iterator();
-          while(keyit.hasNext() && valit.hasNext()) {
-            env.put(keyit.next(), valit.next());
-          }
-          if (keyit.hasNext()) {
-            err("too few arguments given to function: %s", function);
-          }
-          if (valit.hasNext()) {
-            err("too many arguments given to function: %s", function);
-          }
-          result = run(lf, env);
-        } else if (function instanceof CronoFunction) {
-          CronoFunction cf = (CronoFunction)function;
-          result = cf.run(argList.toArray(new CronoType[] {}), environment);
-        }
+          CronoOptions.DPRINT_I--;
+          CronoOptions.dprint("Result: %s\n", result);
+      } else {
+          err("Encountered statement of unknown type: %s\n\t%s\n",
+                  statement.getClass().getName(), statement);
       }
+<<<<<<< HEAD
       CronoOptions.DPRINT_I--;
       CronoOptions.dprint("Result: %s\n", result);
     } else {
       err("Encountered statement of unknown type: %s\n\t%s\n",
           statement.getClass().getName(), statement);
     }
+=======
+>>>>>>> 99aa15662ff8cb55d84e38e4dfea99a372dc858a
 
-    return result;
+      return result;
   }
 }

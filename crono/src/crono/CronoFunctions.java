@@ -23,7 +23,7 @@ import static crono.Nil.NIL;
  * Container class for all built in functions.
  */
 public enum CronoFunctions {
-  CONS(new CronoFunction() {
+ CONS(new CronoFunction() {
     public CronoType run(CronoType[] args, Environment environment) {
       /*
       if (args.length > 2) {
@@ -49,6 +49,10 @@ public enum CronoFunctions {
       return "CONS";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -75,6 +79,10 @@ public enum CronoFunctions {
       return "CAR";
     }
 
+    public int arity()
+    {
+        return 1;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -100,6 +108,10 @@ public enum CronoFunctions {
     public String toString() {
       return "CDR";
     }
+    public int arity()
+    {
+        return 1;
+    }
 
     public boolean evalArgs() {
       return true;
@@ -112,12 +124,15 @@ public enum CronoFunctions {
       } else if (args.length < 1) {
         err("too few arguments given to QUOTE: %s", Arrays.toString(args));
       }
-
       return args[0];
     }
 
     public String toString() {
-      return "'";
+      return "QUOTE";
+    }
+    public int arity()
+    {
+        return 1;
     }
 
     public boolean evalArgs() {
@@ -141,6 +156,10 @@ public enum CronoFunctions {
 
     public String toString() {
       return "DEFINE";
+    }
+    public int arity()
+    {
+        return 3;
     }
 
     public boolean evalArgs() {
@@ -175,6 +194,10 @@ public enum CronoFunctions {
       return "\\";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return false;
     }
@@ -210,6 +233,7 @@ public enum CronoFunctions {
         CronoType val = Interpreter.eval(((Cons)cdr).car(), environment);
         env.put(key, val);
       }
+      CronoOptions.dprint("(Converting LET to LAMBDA)\n");
       List<CronoType> body = Arrays.asList(Arrays.copyOfRange(args, 1, args.length));
       LambdaFunction lambda = new LambdaFunction(body);
       return Interpreter.run(lambda, env);
@@ -219,6 +243,10 @@ public enum CronoFunctions {
       return "LET";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return false;
     }
@@ -240,6 +268,10 @@ public enum CronoFunctions {
 
     public String toString() {
       return "IF";
+    }
+    public int arity()
+    {
+        return 3;
     }
 
     public boolean evalArgs() {
@@ -274,6 +306,10 @@ public enum CronoFunctions {
       return "+";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -291,7 +327,7 @@ public enum CronoFunctions {
 	  err("%s is not a number", args[0]);
 	}
       }
-      
+
       double ddiff = 0.0;
       long ldiff = 0;
       boolean promote = false;
@@ -303,7 +339,7 @@ public enum CronoFunctions {
       }else {
 	  err("%s is not a number", args[0]);
       }
-      
+
       for(int i = 1; i < args.length; ++i) {
 	if(args[i] instanceof CronoNumber) {
 	  ldiff -= ((CronoNumber)args[i]).num;
@@ -324,6 +360,10 @@ public enum CronoFunctions {
       return "-";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -353,6 +393,10 @@ public enum CronoFunctions {
       return "*";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -362,7 +406,7 @@ public enum CronoFunctions {
       if (args.length < 2) {
         err("too few arguments to /: %s", Arrays.toString(args));
       }
-      
+
       double result = 1.0;
       boolean promote = false;
       if(args[0] instanceof CronoNumber) {
@@ -373,7 +417,7 @@ public enum CronoFunctions {
       }else {
 	err("%s is not a number", args[0]);
       }
-      
+
       for(int i = 1; i < args.length; ++i) {
 	if(args[i] instanceof CronoNumber) {
 	  result /= ((double)((CronoNumber)args[i]).num);
@@ -394,6 +438,10 @@ public enum CronoFunctions {
       return "/";
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public boolean evalArgs() {
       return true;
     }
@@ -403,7 +451,7 @@ public enum CronoFunctions {
       if (args.length < 2) {
         err("too few arguments to =: %s", Arrays.toString(args));
       }
-      
+
       boolean eq = true;
       CronoType prev = args[0];
       for(int i = 1; eq && i < args.length; i++) {
@@ -418,6 +466,10 @@ public enum CronoFunctions {
       }
     }
 
+    public int arity()
+    {
+        return 2;
+    }
     public String toString() {
       return "=";
     }
@@ -459,12 +511,16 @@ public enum CronoFunctions {
 	}
         prev = args[i];
       }
-      
+
       if (lt) {
         return Symbol.valueOf("T");
       } else {
         return NIL;
       }
+    }
+    public int arity()
+    {
+        return 2;
     }
 
     public String toString() {
@@ -508,12 +564,17 @@ public enum CronoFunctions {
 	}
         prev = args[i];
       }
-      
+
       if (gt) {
         return Symbol.valueOf("T");
       } else {
         return NIL;
       }
+    }
+
+    public int arity()
+    {
+        return 2;
     }
 
     public String toString() {
@@ -525,55 +586,59 @@ public enum CronoFunctions {
     }
   }),
   SET(new CronoFunction() {
-    public CronoType run(CronoType[] args, Environment environment) {
-      if (args.length < 2) {
-        err("too few arguments to SET: %s", Arrays.toString(args));
-      }
-      if (args.length > 2) {
-        err("too many arguments to SET: %s", Arrays.toString(args));
-      }
-      if (!(args[0] instanceof Symbol)) {
-        err("SET: can only use symbols as keys, got %s", args[0]);
-      }
-      String key = ((Symbol)args[0]).toString();
-      CronoType condition = Interpreter.eval(args[1], environment);
-      boolean value = (condition != NIL);
+      public CronoType run(CronoType[] args, Environment environment) {
+          if (args.length < 2) {
+              err("too few arguments to SET: %s", Arrays.toString(args));
+          }
+          if (args.length > 2) {
+              err("too many arguments to SET: %s", Arrays.toString(args));
+          }
+          if (!(args[0] instanceof Symbol)) {
+              err("SET: can only use symbols as keys, got %s", args[0]);
+          }
+          String key = ((Symbol)args[0]).toString();
+          CronoType condition = Interpreter.eval(args[1], environment);
+          boolean value = (condition != NIL);
 
-      // TODO: possibly turn CronoOptions into an enum and use reflection to
-      //       set values.
-      // Wow, this is annoying to update.
-      if ("dprint_enable".equals(key)) {
-        CronoOptions.DPRINT_ENABLE = value;
-      } else if ("dprint_indent".equals(key)) {
-        CronoOptions.DPRINT_INDENT = value;
-      } else if ("dprint_show_atom_eval".equals(key)) {
-        CronoOptions.DPRINT_SHOW_ATOM_EVAL = value;
-      } else if ("environment_show".equals(key)) {
-        CronoOptions.ENVIRONMENT_SHOW = value;
-      } else if ("environment_show_builtin".equals(key)) {
-        CronoOptions.ENVIRONMENT_SHOW_BUILTIN = value;
-      } else if ("environment_dynamic".equals(key)) {
-        CronoOptions.ENVIRONMENT_DYNAMIC = value;
-      } else if ("environment_show_types".equals(key)) {
-        CronoOptions.ENVIRONMENT_SHOW_TYPES = value;
-      } else if ("environment_multiline".equals(key)) {
-        CronoOptions.ENVIRONMENT_MULTILINE = value;
-      } else if ("lambda_show_closure".equals(key)) {
-        CronoOptions.LAMBDA_SHOW_CLOSURE = value;
-      } else if ("parser_dprint".equals(key)) {
-        CronoOptions.PARSER_DPRINT = value;
+          // TODO: possibly turn CronoOptions into an enum and use reflection to
+          //       set values.
+          // Wow, this is annoying to update.
+          if ("dprint_enable".equals(key)) {
+              CronoOptions.DPRINT_ENABLE = value;
+          } else if ("dprint_indent".equals(key)) {
+              CronoOptions.DPRINT_INDENT = value;
+          } else if ("dprint_show_atom_eval".equals(key)) {
+              CronoOptions.DPRINT_SHOW_ATOM_EVAL = value;
+          } else if ("environment_show".equals(key)) {
+              CronoOptions.ENVIRONMENT_SHOW = value;
+          } else if ("environment_show_builtin".equals(key)) {
+              CronoOptions.ENVIRONMENT_SHOW_BUILTIN = value;
+          } else if ("environment_dynamic".equals(key)) {
+              CronoOptions.ENVIRONMENT_DYNAMIC = value;
+          } else if ("environment_show_types".equals(key)) {
+              CronoOptions.ENVIRONMENT_SHOW_TYPES = value;
+          } else if ("environment_multiline".equals(key)) {
+              CronoOptions.ENVIRONMENT_MULTILINE = value;
+          } else if ("lambda_show_closure".equals(key)) {
+              CronoOptions.LAMBDA_SHOW_CLOSURE = value;
+          } else if ("parser_dprint".equals(key)) {
+              CronoOptions.PARSER_DPRINT = value;
+          }
+
+          return NIL;
       }
 
-      return NIL;
+      public String toString() {
+          return "SET";
+      }
+
+    public int arity()
+    {
+        return 2;
     }
-
-    public String toString() {
-      return "SET";
-    }
-
-    public boolean evalArgs() {
-      return false;
-    }
+      public boolean evalArgs() {
+          return false;
+      }
   }),
   LOAD(new CronoFunction() {
     public CronoType run(CronoType[] args, Environment environment) {
@@ -602,6 +667,10 @@ public enum CronoFunctions {
     public String toString() {
       return "LOAD";
     }
+    public int arity()
+    {
+        return 1;
+    }
 
     public boolean evalArgs() {
       return true;
@@ -622,6 +691,10 @@ public enum CronoFunctions {
 
     public String toString() {
       return "PRINT";
+    }
+    public int arity()
+    {
+        return 2;
     }
 
     public boolean evalArgs() {
@@ -653,7 +726,7 @@ public enum CronoFunctions {
     public String toString() {
       return "PRINTSTR";
     }
-    public int numArgs() {
+    public int arity() {
 	return 1;
     }
     public boolean canCurry() {
@@ -688,15 +761,15 @@ public enum CronoFunctions {
 		err("%s is not a valid field symbol", args[i]);
 	    }
 	}
-	
+
 	env.put((Symbol)args[0], struct);
-	
+
 	return struct; /*< You can actually modify the struct definition */
     }
     public String toString() {
       return "STRUCT";
     }
-    public int numArgs() {
+    public int arity() {
       return -2;
     }
     public boolean canCurry() {
@@ -714,7 +787,7 @@ public enum CronoFunctions {
 	if(!(args[1] instanceof Symbol)) {
 	    err("SUBSTRUCT: %s is not a valid struct symbol", args[1]);
 	}
-	
+
 	CronoStruct parent = (CronoStruct)env.get((Symbol)args[1]);
 	CronoStruct struct = new CronoStruct(args[0].toString(), parent);
 	for(int i = 2; i < args.length; ++i) {
@@ -735,15 +808,15 @@ public enum CronoFunctions {
 		err("%s is not a valid field symbol", args[i]);
 	    }
 	}
-	
+
 	env.put((Symbol)args[0], struct);
-	
+
 	return struct; /*< You can actually modify the struct definition */
     }
     public String toString() {
       return "SUBSTRUCT";
     }
-    public int numArgs() {
+    public int arity() {
       return -3;
     }
     public boolean canCurry() {
@@ -777,13 +850,13 @@ public enum CronoFunctions {
 		err("%s is not a valid field symbol", args[i]);
 	    }
 	}
-	
+
 	return struct;
     }
     public String toString() {
       return "NEWSTRUCT";
     }
-    public int numArgs() {
+    public int arity() {
       /* Newstruct just takes the name of the struct to make and a list
        * of field value pairs */
       return 2;

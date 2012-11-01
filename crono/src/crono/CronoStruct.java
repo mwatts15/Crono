@@ -17,7 +17,7 @@ public class CronoStruct implements CronoFunction {
     private final CronoStruct parent;
     private Map<String, CronoType> fields;
     private String name;
-    
+
     /* Creates a new struct; should only be used when defining a new struct.
      */
     public CronoStruct(String name) {
@@ -35,7 +35,7 @@ public class CronoStruct implements CronoFunction {
 	    rAssimilate(parent);
 	}
     }
-    
+
     public CronoType put(String key, CronoType value) {
 	CronoType t = fields.put(key, value);
 	if(t == null) {
@@ -53,14 +53,14 @@ public class CronoStruct implements CronoFunction {
 	}
 	return t;
     }
-    
+
     private void rAssimilate(CronoStruct s) {
 	if(s.parent != null) {
 	    rAssimilate(s.parent);
 	}
 	fields.putAll(s.fields); /*< Copy fields from the bottom up */
     }
-    
+
     public CronoType run(CronoType[] args, Environment environment) {
 	/* arg[0] is a field, arg[1] is an optional value */
 	switch(args.length) {
@@ -79,8 +79,8 @@ public class CronoStruct implements CronoFunction {
 	}
 	return Nil.NIL; /*< Not needed */
     }
-    
-    public int numArgs() {
+
+    public int arity() {
 	/* Since the implicit struct function is variadic, we return the
 	 * minimum number of args needed as a negative int. 1 for set, so -1.
 	 */
@@ -96,7 +96,7 @@ public class CronoStruct implements CronoFunction {
     public boolean evalArgs() {
 	return false;
     }
-    
+
     /* Creates a copy, used when making an instance of the struct */
     public CronoStruct copy() {
 	CronoStruct nstruct = new CronoStruct(this.name, parent);
@@ -112,7 +112,7 @@ public class CronoStruct implements CronoFunction {
 	}
 	return nstruct;
     }
-    
+
     public String toString() {
 	return "struct";
     }

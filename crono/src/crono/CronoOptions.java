@@ -40,7 +40,7 @@ class OptionParser {
     this.subarg = -1;
     this.optopt = null;
   }
-    
+
   public int nextarg(Option[] options) {
     if(current >= args.length) {
       return -1;
@@ -71,7 +71,7 @@ class OptionParser {
 	      return ((int)(opt.shortopt));
 	    }
 	  }
-	  
+
 	  /* Couldn't find the long option, return '?' */
 	  optchar = optstr;
 	  current++;
@@ -83,7 +83,7 @@ class OptionParser {
 	return -1;
       }
     }
-    
+
     /* Parse short options here */
     char optionchar = args[current].charAt(subarg);
     for(Option opt : options) {
@@ -106,11 +106,11 @@ class OptionParser {
 	}else {
 	  subarg++;
 	}
-	
+
 	return ((int)(opt.shortopt));
       }
     }
-    
+
     /* Didn't find the option, return '?' */
     optchar = "" + optionchar;
     current++;
@@ -126,7 +126,7 @@ public class CronoOptions {
       "usage: crono [-adDeEiIlLmMpqstT] files ...";
   private static String ILLEGAL_OPTION =
       "crono: illegal option -- %s\n";
-    
+
   // Switch controlling whether dprint prints or not.
   public static boolean DPRINT_ENABLE = true;
 
@@ -134,7 +134,7 @@ public class CronoOptions {
   public static boolean DPRINT_INDENT = true;
 
   // Whether or not to show atoms being evaluated.
-  public static boolean DPRINT_SHOW_ATOM_EVAL = false;
+  public static boolean DPRINT_SHOW_ATOM_EVAL = true;
 
   // Level of indention to use when using dprint.
   public static int DPRINT_I = 0;
@@ -149,7 +149,7 @@ public class CronoOptions {
   public static boolean ENVIRONMENT_DYNAMIC = false;
 
   // Whether or not to print types in the environment.
-  public static boolean ENVIRONMENT_SHOW_TYPES = false;
+  public static boolean ENVIRONMENT_SHOW_TYPES = true;
 
   // Whether or not to use multiple lines when printing the environment.
   public static boolean ENVIRONMENT_MULTILINE = true;
@@ -159,10 +159,10 @@ public class CronoOptions {
 
   // Whether or not to show parser debug output.
   public static boolean PARSER_DPRINT = false;
-  
+
   // List of files to run on the interpreter
   public static List<String> FILES = new LinkedList<String>();
-  
+
   public static boolean parseargs(String[] args) {
     OptionParser optparse = new OptionParser(args);
     Option[] opts = {
@@ -185,7 +185,7 @@ public class CronoOptions {
       new Option('T', "debug-indent-level", true),
     };
     int ch;
-    
+
     ch = optparse.nextarg(opts);
     while(ch != -1) {
 	switch(ch) {
@@ -248,15 +248,15 @@ public class CronoOptions {
 	}
 	ch = optparse.nextarg(opts);
     }
-    
+
     /* Use the remaining arguments as files */
     for(int i = optparse.optind(); i < args.length; ++i) {
       FILES.add(args[i]);
     }
-    
+
     return true;
   }
-  
+
   public static void dprint(String msg, Object... args) {
     if (DPRINT_ENABLE) {
       String formatted = String.format(msg, args);
@@ -264,22 +264,22 @@ public class CronoOptions {
        * no longer necessary to have seperate logic for newlines.
        */
       String[] lines = formatted.split("(?<=\n)");
-      StringBuilder ident = new StringBuilder((DPRINT_I + 1) * 2 + 1);
-      
+      StringBuilder ident = new StringBuilder();//(DPRINT_I + 1) * 2 + 1);
+
       /* Build initial identation */
       for(int i = 0; DPRINT_INDENT && i < DPRINT_I; i++) {
 	  ident.append("  ");
       }
-      
+
       /* First line, normal indentation */
       System.out.printf("%s%s", ident.toString(), lines[0]);
-      
+
       /* If we are indenting, we should indent subsequent lines an extra two
        * spaces. */
       if(DPRINT_INDENT) {
 	  ident.append("  ");
       }
-      
+
       /* Got rid of Arrays.copyOfRange; using said function actually creates
        * a new array, which is overkill when you can just use a traditional for
        * loop... */

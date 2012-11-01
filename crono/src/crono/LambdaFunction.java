@@ -19,6 +19,8 @@ import crono.Symbol;
  */
 public class LambdaFunction implements Function {
   public final List<Symbol> args;
+  /* Crono functions allow for a list of statements
+   * without a begin block */
   public final List<CronoType> statements;
   public final Environment environment;
 
@@ -39,11 +41,26 @@ public class LambdaFunction implements Function {
     this.args = args;
     this.environment = environment;
   }
+  /* clones the passed in function */
+  public LambdaFunction(LambdaFunction f)
+  {
+      /* statements shouldn't change, so doesn't need to be copied */
+      /* copy the args list */
+      List<Symbol> new_args = new ArrayList<Symbol>();
+      for (Symbol e: f.args)
+      {
+          new_args.add(e);
+      }
+      this.statements = f.statements;
+      this.args = new_args;
+      this.environment = new Environment(f.environment);
+  }
 
   public String toString() {
     StringBuilder sb = new StringBuilder();
 
-    sb.append("(\\ (");
+    sb.append("(closure (");
+    /* un-bound arguments */
     Iterator<Symbol> argit = args.iterator();
     while(argit.hasNext()) {
       sb.append(argit.next().toString());
@@ -61,9 +78,13 @@ public class LambdaFunction implements Function {
     }
     sb.append(")");
 
+    /* bound arguments and inherited environment
+     * should be SHOW_EVIRONMENT, but whatevers*/
     if (CronoOptions.LAMBDA_SHOW_CLOSURE) {
       sb.append(" [");
+      /* The environment */
       sb.append(closure());
+      //environment.toString();
       sb.append("]");
     }
 
@@ -103,6 +124,7 @@ public class LambdaFunction implements Function {
       CronoType val = valit.next();
       result.append(key.toString());
       result.append(": ");
+
       if (val instanceof LambdaFunction) {
         boolean prev = CronoOptions.LAMBDA_SHOW_CLOSURE;
         CronoOptions.LAMBDA_SHOW_CLOSURE = false;
