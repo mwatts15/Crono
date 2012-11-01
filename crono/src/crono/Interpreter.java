@@ -84,6 +84,7 @@ public class Interpreter {
       }
 
       Cons cons = (Cons)statement;
+	  charEval:
       if (cons != NIL) {
         // Lookup function.
         CronoType f = eval(cons.car(), environment);
@@ -98,7 +99,12 @@ public class Interpreter {
           }
         } else if (f instanceof Function) {
           function = (Function)f;
-        } else {
+        } else if (f instanceof CronoCharacter){
+		  //err("%s is a character", f);
+		  result = cons;
+		  cons = NIL;
+		  break charEval;
+		} else {
           err("%s is not a function name.", f);
         }
 
@@ -155,6 +161,7 @@ public class Interpreter {
           result = cf.run(argList.toArray(new CronoType[] {}), environment);
         }
       }
+	  skipEval:
       CronoOptions.DPRINT_I--;
       CronoOptions.dprint("Result: %s\n", result);
     } else {
