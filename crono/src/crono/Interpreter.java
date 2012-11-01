@@ -93,6 +93,7 @@ public class Interpreter {
  *
  */
           Cons cons = (Cons)statement;
+		  charSkip:
           if (cons != NIL) {
               // Lookup function.
               CronoType f = eval(cons.car(), environment);
@@ -116,6 +117,12 @@ public class Interpreter {
                   // try to turn it into a function
                   function = (Function)eval(f, environment);
               }
+			  else if (f instanceof CronoCharacter)
+			  {
+				  result = cons;
+				  cons = NIL;
+				  break charSkip;
+			  }
               else
               {
                   err("%s is not a function name.", f);
