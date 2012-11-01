@@ -223,15 +223,6 @@ public class Interpreter {
           err("Encountered statement of unknown type: %s\n\t%s\n",
                   statement.getClass().getName(), statement);
       }
-<<<<<<< HEAD
-      CronoOptions.DPRINT_I--;
-      CronoOptions.dprint("Result: %s\n", result);
-    } else {
-      err("Encountered statement of unknown type: %s\n\t%s\n",
-          statement.getClass().getName(), statement);
-    }
-=======
->>>>>>> 99aa15662ff8cb55d84e38e4dfea99a372dc858a
 
       return result;
   }
