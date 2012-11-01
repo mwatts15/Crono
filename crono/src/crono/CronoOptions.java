@@ -246,6 +246,7 @@ public class CronoOptions {
 	    System.err.println(HELP_STRING);
 	    return false;
 	}
+	ch = optparse.nextarg(opts);
     }
 
     /* Use the remaining arguments as files */
