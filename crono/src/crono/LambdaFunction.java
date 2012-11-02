@@ -55,8 +55,11 @@ public class LambdaFunction implements Function {
       this.args = new_args;
       this.environment = new Environment(f.environment);
   }
-
-  public String toString() {
+public String toString()
+{
+    return statements.toString();
+}
+  public String _toString() {
     StringBuilder sb = new StringBuilder();
 
     sb.append("(closure (");
@@ -81,11 +84,11 @@ public class LambdaFunction implements Function {
     /* bound arguments and inherited environment
      * should be SHOW_EVIRONMENT, but whatevers*/
     if (CronoOptions.LAMBDA_SHOW_CLOSURE) {
-      sb.append(" [");
+      sb.append(" {");
       /* The environment */
       sb.append(closure());
       //environment.toString();
-      sb.append("]");
+      sb.append("}");
     }
 
     return sb.toString();
@@ -122,8 +125,6 @@ public class LambdaFunction implements Function {
     while(keyit.hasNext()) {
       Symbol key = keyit.next();
       CronoType val = valit.next();
-      result.append(key.toString());
-      result.append(": ");
 
       if (val instanceof LambdaFunction) {
         boolean prev = CronoOptions.LAMBDA_SHOW_CLOSURE;
@@ -138,12 +139,14 @@ public class LambdaFunction implements Function {
         result.append(val.getClass().getName());
         result.append("]");
       }
+      result.append("/");
+      result.append(key.toString());
       if (keyit.hasNext()) {
         result.append(", ");
       }
     }
 
-    return result.toString();
+    return "";//result.toString();
   }
 }
 
