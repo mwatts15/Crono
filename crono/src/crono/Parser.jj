@@ -39,7 +39,7 @@ SKIP:
 
 TOKEN:
 {
-  < NIL : ["N", "n"] ["I", "i"] ["L", "l"] >
+  < NIL : (["N", "n"] ["I", "i"] ["L", "l"]) | ("#f" | "#F") >
 }
 
 TOKEN:
@@ -104,8 +104,7 @@ Atom atom():
 Cons list():
 {
   Token n;
-  Atom a;
-  Cons c;
+  CronoType node;
   List<CronoType> args = new ArrayList<CronoType>();
 }
 {
@@ -117,12 +116,9 @@ Cons list():
     }
   | <LPAR>
     (
-        c = list() {
-          args.add(c);
-        }
-      | a = atom() {
-          args.add(a);
-        }
+      node = node() {
+        args.add(node);
+      }
     )* <RPAR> {
       if(debug) {
         System.out.println("Parser: Saw LIST");
