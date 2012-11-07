@@ -39,7 +39,7 @@ SKIP:
 
 TOKEN:
 {
-  < NIL : ("Nil"|"NIL"|"nil") >
+  < NIL : ["N", "n"] ["I", "i"] ["L", "l"] >
 }
 
 TOKEN:
