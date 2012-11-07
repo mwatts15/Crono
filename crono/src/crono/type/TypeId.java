@@ -38,6 +38,9 @@ public class TypeId extends Atom {
 	return TypeId.TYPEID;
     }
     public String toString() {
+	if(isQuoted()) {
+	    return "'" + image;
+	}
 	return image;
     }
 }

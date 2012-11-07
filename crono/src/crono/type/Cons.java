@@ -1,6 +1,7 @@
 package crono.type;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -104,10 +105,49 @@ public class Cons extends CronoType implements Iterable<CronoType> {
     
     public String toString() {
 	StringBuilder builder = new StringBuilder();
+	if(isQuoted()) {
+	    builder.append('\'');
+	}
+	
 	builder.append("(");
-	builder.append(car.toString());
-	builder.append(" . ");
-	builder.append(cdr.toString());
+	
+	Cons next = this;
+	while(next != null) {
+	    builder.append(next.car);
+	    if(next.cdr instanceof Cons) {
+		if(next.cdr == Nil.NIL) {
+		    next = null;
+		}else {
+		    builder.append(" ");
+		    next = (Cons)(next.cdr);
+		}
+	    }else {
+		builder.append(" . ");
+		builder.append(next.cdr);
+		next = null;
+	    }
+	}
+	
+	builder.append(")");
 	return builder.toString();
+    }
+    
+    public List<CronoType> toList() {
+	List<CronoType> list = new LinkedList<CronoType>();
+	Cons next = this;
+	while(next != null) {
+	    list.add(next.car);
+	    if(next.cdr instanceof Cons) {
+		if(next.cdr == Nil.NIL) {
+		    next = null;
+		}else {
+		    next = (Cons)(next.cdr);
+		}
+	    }else {
+		list.add(next.cdr);
+		next = null;
+	    }
+	}
+	return list;
     }
 }

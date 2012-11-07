@@ -8,43 +8,66 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class Environment {
-    private Map<Symbol, CronoType> symbols;
-    private boolean show_builtins, multiline, show_types;
+    public boolean show_builtins, multiline, show_types;
     
+    private Map<String, CronoType> symbols;
     private String repr;
     private boolean dirty;
     
     public Environment() {
-	symbols = new HashMap<Symbol, CronoType>();
+	this(true);
+    }
+    
+    public Environment(boolean builtins) {
+	symbols = new HashMap<String, CronoType>();
 	show_builtins = false;
 	multiline = true;
 	show_types = false;
 	dirty = true; /*< dirty flag to rebuild string repr */
+	
+	if(builtins) {
+	    for(CronoFunction cf : CronoFunction.values()) {
+		put(new Symbol(cf.function.toString()), cf.function);
+	    }
+	}
+    }
+    
+    public Environment(Environment env) {
+	symbols = new HashMap<String, CronoType>(env.symbols);
+	show_builtins = env.show_builtins;
+	multiline = env.multiline;
+	show_types = env.show_types;
+	dirty = env.dirty;
     }
     
     public void put(Symbol sym, CronoType value) {
 	dirty = true;
-	symbols.put(sym, value);
+	symbols.put(sym.toString(), value);
     }
     
     public CronoType get(Symbol sym) {
-	return symbols.get(sym);
+	return symbols.get(sym.toString());
+    }
+    
+    public void remove(Symbol sym) {
+	dirty = true;
+	symbols.remove(sym.toString());
     }
     
     public boolean contains(Symbol sym) {
-	return symbols.containsKey(sym);
+	return symbols.containsKey(sym.toString());
     }
     
-    public Iterator<Map.Entry<Symbol, CronoType>> iterator() {
+    public Iterator<Map.Entry<String, CronoType>> iterator() {
 	return symbols.entrySet().iterator();
     }
     
     public String toString() {
 	if(dirty) {
 	    StringBuilder result = new StringBuilder();
-	    Iterator<Map.Entry<Symbol, CronoType>> iter = iterator();
-	    Map.Entry<Symbol, CronoType> entry;
-	    Symbol sym;
+	    Iterator<Map.Entry<String, CronoType>> iter = iterator();
+	    Map.Entry<String, CronoType> entry;
+	    String sym;
 	    CronoType val;
 	    boolean hasnext = iter.hasNext();
 	    while(hasnext) {
@@ -52,7 +75,7 @@ public class Environment {
 		sym = entry.getKey();
 		val = entry.getValue();
 		/* TODO: Check if the value is a builtin */
-		result.append(sym.toString());
+		result.append(sym);
 		result.append(": ");
 		result.append(val.toString());
 		if(show_types) {
