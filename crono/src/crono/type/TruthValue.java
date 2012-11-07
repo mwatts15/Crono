@@ -1,11 +1,11 @@
 package crono.type;
 
-public class Nil extends Cons {
-    public static final TypeId TYPEID = new TypeId(":nil", Nil.class,
+public class TruthValue extends Cons {
+    public static final TypeId TYPEID = new TypeId(":t", TruthValue.class,
 						   Cons.TYPEID);
-    public static final Nil NIL = new Nil();
+    public static final TruthValue T = new TruthValue();
     
-    protected Nil() {
+    protected TruthValue() {
 	this.car = null;
 	this.cdr = null;
     }
@@ -18,13 +18,13 @@ public class Nil extends Cons {
     }
     
     public TypeId typeId() {
-	return Nil.TYPEID;
+	return TruthValue.TYPEID;
     }
     public String toString() {
-	return "Nil";
+	return "T";
     }
     
     public boolean equals(Object o) {
-	return (o instanceof Nil);
+	return (o instanceof TruthValue);
     }
 }

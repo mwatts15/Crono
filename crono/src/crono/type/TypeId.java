@@ -1,7 +1,8 @@
 package crono.type;
 
 public class TypeId extends Atom {
-    public static final TypeId TYPEID = new TypeId(":type-id", TypeId.class);
+    public static final TypeId TYPEID = new TypeId(":type-id", TypeId.class,
+						   Atom.TYPEID);
     
     public String image;
     public Class type;

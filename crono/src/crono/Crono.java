@@ -25,19 +25,17 @@ public class Crono {
     public static final String prompt = "> ";
     
     private static CronoType getStatement(Parser p) {
-	boolean good = false;
+	/* This was supposed to loop the parser until it got a valid statement
+	 * or hit EOF, but I can't get it to work quite right */
 	CronoType statement = null;
-	while(!good) {
-	    try {
-		System.out.print(prompt);
-		statement = p.statement();
-		good = true;
-	    }catch(ParseException pe) {
-		System.err.printf("Error parsing crono statement:\n  %s\n",
-				  pe.toString());
-		good = true; /*< TODO: replace this with clearing the stream */
-	    }
+	System.out.print(prompt);
+	try {
+	    statement = p.statement();
+	}catch(ParseException pe) {
+	    System.err.println(pe);
+	    statement = null;
 	}
+	
 	return statement;
     }
     
@@ -103,8 +101,17 @@ public class Crono {
 	    boolean good = false;
 	    CronoType statement = getStatement(parser);
 	    while(statement != null) {
-		statement = statement.accept(v);
-		System.out.printf("Result: %s\n", statement.toString());
+		try{
+		    statement = statement.accept(v);
+		    System.out.printf("Result: %s\n", statement.toString());
+		}catch(RuntimeException re) {
+		    String message = re.getMessage();
+		    if(message != null) {
+			System.err.println(message);
+		    }else {
+			System.err.println("Unknown Interpreter Error!");
+		    }
+		}
 		statement = getStatement(parser);
 	    }
 	    

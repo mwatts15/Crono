@@ -19,4 +19,8 @@ public class CronoFloat extends CronoNumber {
     public String toString() {
 	return ((Double)value).toString();
     }
+    
+    public boolean equals(Object o) {
+	return ((o instanceof CronoFloat) && ((CronoFloat)o).value == value);
+    }
 }

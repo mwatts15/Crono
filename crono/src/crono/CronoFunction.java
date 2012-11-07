@@ -1,5 +1,6 @@
 package crono;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import crono.type.Cons;
@@ -9,19 +10,79 @@ import crono.type.CronoNumber;
 import crono.type.CronoType;
 import crono.type.Function;
 import crono.type.Function.EvalType;
+import crono.type.Nil;
 import crono.type.LambdaFunction;
 import crono.type.Symbol;
+import crono.type.TruthValue;
 
 public enum CronoFunction {
+    CONS(new Function() {
+	public int arity() {
+	    return 2;
+	}
+	public CronoType run(Visitor v, CronoType[] args) {
+	    return new Cons(args[0], args[1]);
+	}
+	public String toString() {
+	    return "cons";
+	}
+    }),
+    CAR(new Function() {
+	public static final String _not_cons = "%s is not a cons cell";
+	public int arity() {
+	    return 1;
+	}
+        public CronoType run(Visitor v, CronoType[] args) {
+	    if(!(args[0] instanceof Cons)) {
+		throw new RuntimeException(String.format(_not_cons, args[0]));
+	    }
+	    return ((Cons)args[0]).car();
+	}
+	public String toString() {
+	    return "car";
+	}
+    }),
+    CDR(new Function() {
+	public static final String _not_cons = "%s is not a cons cell";
+	public int arity() {
+	    return 1;
+	}
+	public CronoType run(Visitor v, CronoType[] args) {
+	    if(!(args[0] instanceof Cons)) {
+		throw new RuntimeException(String.format(_not_cons, args[0]));
+	    }
+	    return ((Cons)args[0]).cdr();
+	}
+	public String toString() {
+	    return "cdr";
+	}
+    }),
+    DEFINE(new Function() {
+	public int arity() {
+	    return 2;
+	}
+	public EvalType eval() {
+	    return EvalType.NONE;
+	}
+	public CronoType run(Visitor v, CronoType[]args) {
+	    if(!(args[0] instanceof Symbol)) {
+		throw new RuntimeException(String.format("%s is not a symbol",
+							 args[0]));
+	    }
+	    CronoType value = args[1].accept(v);
+	    v.getEnv().put(((Symbol)args[0]), value);
+	    return value;
+	}
+	public String toString() {
+	    return "define";
+	}
+    }),
     LAMBDA(new Function() {
 	    public static final String _invalid_arg_type =
 		"Invalid argument type to '\\': expects :cons<:symbol> :any";
 	    
 	    public int arity() {
 		return 2;
-	    }
-	    public boolean variadic() {
-		return false;
 	    }
 	    public EvalType eval() {
 		return EvalType.NONE;
@@ -46,15 +107,94 @@ public enum CronoFunction {
 		return "\\";
 	    }
     }),
-    ADD(new Function() {
+    LET(new Function() {
+	public static final String _subst_list_type =
+	    "LET: substitution list must be :cons, not %s";
 	public int arity() {
 	    return 2;
 	}
 	public boolean variadic() {
-	    return false;
+	    return true;
 	}
 	public EvalType eval() {
-	    return EvalType.FULL;
+	    return EvalType.NONE;
+	}
+	public CronoType run(Visitor v, CronoType[] args) {
+	    if(!(args[0] instanceof Cons)) {
+		String msg = String.format(_subst_list_type,
+					   args[0].typeId().image);
+		throw new RuntimeException(msg);
+	    }
+	    
+	    List<Symbol> symlist = new LinkedList<Symbol>();
+	    List<CronoType> arglist = new LinkedList<CronoType>();
+	    for(CronoType ct : ((Cons)args[0])) {
+		if(!(ct instanceof Cons)) {
+		    throw new RuntimeException("expected Cons in subst list");
+		}
+		
+		CronoType car = ((Cons)ct).car();
+		CronoType cdr = ((Cons)ct).cdr();
+		if(!(car instanceof Symbol)) {
+		    throw new RuntimeException("LET: symbols only");
+		}
+		
+		cdr = cdr.accept(v);
+		symlist.add((Symbol)car);
+		arglist.add(cdr);
+	    }
+	    
+	    Symbol[] lsyms = new Symbol[symlist.size()];
+	    lsyms = symlist.toArray(lsyms);
+	    
+	    List<CronoType> bodylist = new LinkedList<CronoType>();
+	    for(int i = 1; i < args.length; ++i) {
+		bodylist.add(args[i]);
+	    }
+	    CronoType body = Cons.fromList(bodylist);
+	    CronoType[] largs = new CronoType[arglist.size()];
+	    largs = arglist.toArray(largs);
+	    
+	    LambdaFunction lambda = new LambdaFunction(lsyms,body,v.getEnv());
+	    return lambda.run(v, largs); /*< -. - */
+	}
+	public String toString() {
+	    return "let";
+	}
+    }),
+    IF(new Function() {
+	    public int arity() {
+		return 3;
+	    }
+	    public EvalType eval() {
+		return EvalType.NONE;
+	    }
+	    public CronoType run(Visitor v, CronoType[] args) {
+		CronoType check = args[0].accept(v);
+		if(check != Nil.NIL) {
+		    return args[1].accept(v);
+		}
+		return args[2].accept(v);
+	    }
+	    public String toString() {
+		return "if";
+	    }
+    }),
+    EQ(new Function() {
+	    public int arity() {
+		return 2;
+	    }
+	    public CronoType run(Visitor v, CronoType[] args) {
+		return (args[0].equals(args[1])) ?
+		    TruthValue.T : Nil.NIL;
+	    }
+	    public String toString() {
+		return "=";
+	    }
+    }),
+    ADD(new Function() {
+	public int arity() {
+	    return 2;
 	}
 	public CronoType run(Visitor v, CronoType[] args) {
 	    CronoNumber lhs = null, rhs = null;
@@ -97,13 +237,6 @@ public enum CronoFunction {
 	public int arity() {
 	    return 2;
 	}
-	public boolean variadic() {
-	    return false;
-	}
-	public EvalType eval() {
-	    return EvalType.FULL;
-	}
-	    
 	public CronoType run(Visitor v, CronoType[] args) {
 	    CronoNumber lhs = null, rhs = null;
 	    if(!(args[0] instanceof CronoNumber &&
@@ -145,12 +278,6 @@ public enum CronoFunction {
 	public int arity() {
 	    return 2;
 	}
-	public boolean variadic() {
-	    return false;
-	}
-	public EvalType eval() {
-	    return EvalType.FULL;
-	}
 	public CronoType run(Visitor v, CronoType[] args) {
 	    CronoNumber lhs = null, rhs = null;
 	    if(!(args[0] instanceof CronoNumber &&
@@ -191,12 +318,6 @@ public enum CronoFunction {
     DIV(new Function() {
 	public int arity() {
 	    return 2;
-	}
-	public boolean variadic() {
-	    return false;
-	}
-	public EvalType eval() {
-	    return EvalType.FULL;
 	}
 	public CronoType run(Visitor v, CronoType[] args) {
 	    CronoNumber lhs = null, rhs = null;

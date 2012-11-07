@@ -35,6 +35,10 @@ public class CronoCharacter extends CronoPrimitive {
 	return builder.toString();
     }
     
+    public boolean equals(Object o) {
+	return ((o instanceof CronoCharacter) && ((CronoCharacter)o).ch == ch);
+    }
+    
     public static char escape(char ch) {
 	switch(ch) {
 	case 'n':

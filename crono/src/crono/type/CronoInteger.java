@@ -19,4 +19,9 @@ public class CronoInteger extends CronoNumber {
     public String toString() {
 	return ((Long)value).toString();
     }
+    
+    public boolean equals(Object o) {
+	return ((o instanceof CronoInteger) &&
+		((CronoInteger)o).value == value);
+    }
 }
