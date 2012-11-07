@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import crono.type.Cons;
+import crono.type.CronoCharacter;
 import crono.type.CronoFloat;
 import crono.type.CronoInteger;
 import crono.type.CronoNumber;
@@ -355,6 +356,66 @@ public enum CronoFunction {
 	
 	public String toString() {
 	    return "/";
+	}
+    }),
+    INT(new Function() {
+	public static final String _bad_type =
+	    "INT: Excepted one of :char, :float, or :int; got %s";
+        public int arity() {
+	    return 1;
+	}
+	public CronoType run(Visitor v, CronoType[] args) {
+	    if(args[0] instanceof CronoCharacter) {
+		return new CronoInteger(((long)((CronoCharacter)args[0]).ch));
+	    }else if(args[0] instanceof CronoFloat) {
+		return new CronoInteger(((long)((CronoFloat)args[0]).value));
+	    }else if(args[0] instanceof CronoInteger) {
+		return args[0];
+	    }
+	    throw new RuntimeException(String.format(_bad_type,
+						     args[0].typeId().image));
+	}
+	public String toString() {
+	    return "int";
+	}
+    }),
+    CHAR(new Function() {
+	public static final String _bad_type =
+	    "CHAR: expected one of :int, or :char; got %s";
+	public int arity() {
+	    return 1;
+	}
+	public CronoType run(Visitor v, CronoType[] args) {
+	    if(args[0] instanceof CronoInteger) {
+		return new CronoCharacter((char)((CronoInteger)args[0]).value);
+	    }else if(args[0] instanceof CronoCharacter) {
+		return args[0];
+	    }
+	    throw new RuntimeException(String.format(_bad_type,
+						     args[0].typeId().image));
+	}
+	public String toString() {
+	    return "char";
+	}
+    }),
+    FLOAT(new Function() {
+	public static final String _bad_type =
+	    "FLOAT: expected one of :int, or :float; got %s";
+	public int arity() {
+	    return 1;
+	}
+	public CronoType run(Visitor v, CronoType[] args) {
+	    if(args[0] instanceof CronoInteger) {
+		return new CronoFloat((double)((CronoInteger)args[0]).value);
+	    }else if(args[0] instanceof CronoFloat) {
+		return args[0];
+	    }
+	    
+	    throw new RuntimeException(String.format(_bad_type,
+						     args[0].typeId().image));
+	}
+	public String toString() {
+	    return "float";
 	}
     }),
     ;

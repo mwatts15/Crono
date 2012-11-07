@@ -5,7 +5,7 @@ public class CronoCharacter extends CronoPrimitive {
 						   CronoCharacter.class,
 						   CronoPrimitive.TYPEID);
     
-    protected char ch;
+    public final char ch;
     
     public CronoCharacter(String image) {
 	int strlen = image.length();
