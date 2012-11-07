@@ -61,7 +61,7 @@ public class Interpreter extends Visitor {
 	
 	Iterator<CronoType> iter = c.iterator();
 	if(!(iter.hasNext())) {
-	    return Nil.NIL;
+	    return c; /*< C is an empty list (may be Nil or T) */
 	}
 	
 	CronoType value = iter.next().accept(this);

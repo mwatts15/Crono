@@ -21,7 +21,7 @@ public class TruthValue extends Cons {
 	return TruthValue.TYPEID;
     }
     public String toString() {
-	return "T";
+	return "#t";
     }
     
     public boolean equals(Object o) {

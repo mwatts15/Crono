@@ -19,6 +19,7 @@ import crono.type.CronoInteger;
 import crono.type.CronoType;
 import crono.type.Nil;
 import crono.type.Symbol;
+import crono.type.TruthValue;
 
 public class Parser {
   public static Types types = new Types();
@@ -39,7 +40,8 @@ SKIP:
 
 TOKEN:
 {
-  < NIL : (["N", "n"] ["I", "i"] ["L", "l"]) | ("#f" | "#F") >
+    < NIL : (["N", "n"] ["I", "i"] ["L", "l"]) | ("#f" | "#F") >
+  | < TRUE : ("#t" | "#T") >
 }
 
 TOKEN:
@@ -113,6 +115,12 @@ Cons list():
         System.out.println("Parser: Saw <NIL>");
       }
       return Nil.NIL;
+    }
+  | <TRUE> {
+      if(debug) {
+        System.out.println("Parser: Saw <TRUE>");
+      }
+      return TruthValue.T;
     }
   | <LPAR>
     (
