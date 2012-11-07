@@ -7,13 +7,15 @@ public abstract class Function extends Atom {
 	new TypeId(":function", Function.class);
     
     public enum EvalType {
-	FULL("full"),
-	PARTIAL("partial"),
-	NONE("none"),
+	FULL("full", 2),
+	PARTIAL("partial", 1),
+	NONE("none", 0),
 	;
 	
 	public final String name;
-	private EvalType(String s) {
+	public final int level;
+	private EvalType(String s, int l) {
+	    this.level = l;
 	    this.name = s;
 	}
 	public String toString() {

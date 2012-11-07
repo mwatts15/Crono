@@ -32,7 +32,6 @@ public enum CronoFunction {
 		}
 		
 		List<CronoType> list = ((Cons)args[0]).toList();
-		System.err.printf("Number of arguments: ");
 		for(CronoType item : list) {
 		    if(!(item instanceof Symbol)) {
 			throw new RuntimeException(_invalid_arg_type);

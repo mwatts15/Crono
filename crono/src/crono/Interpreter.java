@@ -51,8 +51,11 @@ public class Interpreter extends Visitor {
     }
     
     public CronoType visit(Cons c) {
-	if(c.isQuoted() || eval == Function.EvalType.NONE) {
+	if(c.isQuoted()) {
 	    c.quote(false);
+	    return c;
+	}
+	if(eval == Function.EvalType.NONE) {
 	    return c;
 	}
 	
@@ -70,6 +73,9 @@ public class Interpreter extends Visitor {
 	     * expects two numbers.
 	     */
 	    eval = ((Function)value).eval();
+	    if(eval.level > reserve.level) {
+		eval = reserve;
+	    }
 	    List<CronoType> args = new ArrayList<CronoType>();
 	    while(iter.hasNext()) {
 		args.add(iter.next().accept(this));
@@ -160,7 +166,12 @@ public class Interpreter extends Visitor {
 		return lfun.run(this, args.toArray(argarray));
 	    }
 	    CronoType[] argarray = new CronoType[args.size()];
-	    return ((Function)value).run(this, args.toArray(argarray));
+	    if(eval == Function.EvalType.FULL) {
+		return ((Function)value).run(this, args.toArray(argarray));
+	    }else {
+		args.add(0, value);
+		return Cons.fromList(args);
+	    }
 	}
 	
 	/* The initial value is not a function */
