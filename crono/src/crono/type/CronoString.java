@@ -9,8 +9,28 @@ public class CronoString extends CronoArray {
     protected int size;
     
     public CronoString(String str) {
-	size = str.length() - 2;
-	data = new StringBuilder(str.substring(1, size + 1));
+	int size = str.length() - 2;
+	data = new StringBuilder(size);
+	
+	boolean escape = false;
+	char ch;
+	for(int i = 1; i < (size + 1); ++i) {
+	    ch = str.charAt(i);
+	    if(escape) {
+		data.append(CronoCharacter.escape(str.charAt(i)));
+		escape = false;
+	    }else {
+		switch(ch) {
+		case '\\':
+		    escape = true;
+		    break;
+		default:
+		    data.append(ch);
+		    break;
+		}
+	    }
+	}
+	this.size = data.length();
     }
     
     public CronoString(int size) {
