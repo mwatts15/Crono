@@ -1,5 +1,8 @@
 package crono;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -440,10 +443,13 @@ public enum CronoFunction {
 	    return "float";
 	}
     }),
-    /*
     LOAD(new Function() {
 	public static final String _bad_type =
 	    "LOAD: expected :string, got %s";
+	public static final String _file_not_found =
+	    "LOAD: could not open file %s";
+	public static final String _bad_parse =
+	    "LOAD: error parsing file:\n%s";
         public int arity() {
 	    return 1;
         }
@@ -451,14 +457,30 @@ public enum CronoFunction {
 	    if(!(args[0] instanceof CronoString)) {
 		throw new InterpreterException(_bad_type, args[0].typeId());
 	    }
+	    InputStream is;
+	    try {
+		is = new FileInputStream(((CronoString)args[0]).image());
+	    }catch(FileNotFoundException fnfe) {
+		throw new InterpreterException(_file_not_found,
+					       fnfe.getMessage());
+	    }
 	    
-	    return Nil.NIL;
+	    Parser p = new Parser(is);
+	    CronoType program;
+	    try {
+		program = p.program(); /*< Fetch entire program */
+	    }catch(ParseException pe) {
+		throw new InterpreterException(_bad_parse, pe.getMessage());
+	    }
+	    
+	    System.err.printf("LOAD: interpreting file %s\n", args[0]);
+	    return program.accept(v);
         }
         public String toString() {
 	    return "load";
         }
     }),
-    *//*
+    /*
     PRINT(new Function() {
         public int arity() {
         }
