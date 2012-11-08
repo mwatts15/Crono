@@ -8,6 +8,7 @@ import crono.type.CronoCharacter;
 import crono.type.CronoFloat;
 import crono.type.CronoInteger;
 import crono.type.CronoNumber;
+import crono.type.CronoString;
 import crono.type.CronoType;
 import crono.type.Function;
 import crono.type.Function.EvalType;
@@ -35,7 +36,7 @@ public enum CronoFunction {
 	}
         public CronoType run(Visitor v, CronoType[] args) {
 	    if(!(args[0] instanceof Cons)) {
-		throw new RuntimeException(String.format(_not_cons, args[0]));
+		throw new InterpreterException(_not_cons, args[0]);
 	    }
 	    return ((Cons)args[0]).car();
 	}
@@ -50,7 +51,7 @@ public enum CronoFunction {
 	}
 	public CronoType run(Visitor v, CronoType[] args) {
 	    if(!(args[0] instanceof Cons)) {
-		throw new RuntimeException(String.format(_not_cons, args[0]));
+		throw new InterpreterException(_not_cons, args[0]);
 	    }
 	    return ((Cons)args[0]).cdr();
 	}
@@ -59,6 +60,8 @@ public enum CronoFunction {
 	}
     }),
     DEFINE(new Function() {
+	public static final String _bad_type =
+	    "DEFINE: expected :string, got %s";
 	public int arity() {
 	    return 2;
 	}
@@ -67,8 +70,7 @@ public enum CronoFunction {
 	}
 	public CronoType run(Visitor v, CronoType[]args) {
 	    if(!(args[0] instanceof Symbol)) {
-		throw new RuntimeException(String.format("%s is not a symbol",
-							 args[0]));
+		throw new InterpreterException(_bad_type, args[0].typeId());
 	    }
 	    CronoType value = args[1].accept(v);
 	    v.getEnv().put(((Symbol)args[0]), value);
@@ -79,8 +81,10 @@ public enum CronoFunction {
 	}
     }),
     LAMBDA(new Function() {
-	    public static final String _invalid_arg_type =
-		"Invalid argument type to '\\': expects :cons<:symbol> :any";
+	    public static final String _bad_type =
+		"\\: expected :cons :any, got %s, %s";
+	    public static final String _bad_arg =
+		"\\: arguments must be :symbol, got %s";
 	    
 	    public int arity() {
 		return 2;
@@ -90,13 +94,14 @@ public enum CronoFunction {
 	    }
 	    public CronoType run(Visitor v, CronoType[] args) {
 		if(!(args[0] instanceof Cons)) {
-		    throw new RuntimeException(_invalid_arg_type);
+		    throw new InterpreterException(_bad_type,
+						   args[0].typeId());
 		}
 		
 		List<CronoType> list = ((Cons)args[0]).toList();
 		for(CronoType item : list) {
 		    if(!(item instanceof Symbol)) {
-			throw new RuntimeException(_invalid_arg_type);
+			throw new InterpreterException(_bad_arg,item.typeId());
 		    }
 		}
 		
@@ -110,7 +115,11 @@ public enum CronoFunction {
     }),
     LET(new Function() {
 	public static final String _subst_list_type =
-	    "LET: substitution list must be :cons, not %s";
+	    "LET: substitution list must be :cons, got %s";
+	public static final String _subst_not_cons =
+	    "LET: expected :cons in substitution list, got %s";
+	public static final String _subst_not_sym = 
+	    "LET: argument names numst be :symbol, got %s";
 	public int arity() {
 	    return 2;
 	}
@@ -122,22 +131,23 @@ public enum CronoFunction {
 	}
 	public CronoType run(Visitor v, CronoType[] args) {
 	    if(!(args[0] instanceof Cons)) {
-		String msg = String.format(_subst_list_type,
-					   args[0].typeId().image);
-		throw new RuntimeException(msg);
+		throw new InterpreterException(_subst_list_type,
+					       args[0].typeId());
 	    }
 	    
 	    List<Symbol> symlist = new LinkedList<Symbol>();
 	    List<CronoType> arglist = new LinkedList<CronoType>();
 	    for(CronoType ct : ((Cons)args[0])) {
 		if(!(ct instanceof Cons)) {
-		    throw new RuntimeException("expected Cons in subst list");
+		    throw new InterpreterException(_subst_not_cons,
+						   ct.typeId());
 		}
 		
 		CronoType car = ((Cons)ct).car();
 		CronoType cdr = ((Cons)ct).cdr();
 		if(!(car instanceof Symbol)) {
-		    throw new RuntimeException("LET: symbols only");
+		    throw new InterpreterException(_subst_not_sym,
+						   car.typeId());
 		}
 		
 		cdr = cdr.accept(v);
@@ -194,6 +204,8 @@ public enum CronoFunction {
 	    }
     }),
     ADD(new Function() {
+	public static final String _bad_type =
+	    "+: expected types :number :number, got %s %s";
 	public int arity() {
 	    return 2;
 	}
@@ -201,7 +213,8 @@ public enum CronoFunction {
 	    CronoNumber lhs = null, rhs = null;
 	    if(!(args[0] instanceof CronoNumber &&
 		 args[1] instanceof CronoNumber)) {
-		throw new RuntimeException("Invalid argument types to '+'");
+		throw new InterpreterException(_bad_type, args[0].typeId(),
+					       args[0].typeId());
 	    }
 	    
 	    lhs = (CronoNumber)(args[0]);
@@ -235,6 +248,9 @@ public enum CronoFunction {
 	}
     }),
     SUB(new Function() {
+	public static final String _bad_type =
+	    "-: expected types :number :number, got %s %s";
+
 	public int arity() {
 	    return 2;
 	}
@@ -242,7 +258,8 @@ public enum CronoFunction {
 	    CronoNumber lhs = null, rhs = null;
 	    if(!(args[0] instanceof CronoNumber &&
 		 args[1] instanceof CronoNumber)) {
-		throw new RuntimeException("Invalid argument types to '+'");
+		throw new InterpreterException(_bad_type, args[0].typeId(),
+					       args[1].typeId());
 	    }
 	    
 	    lhs = (CronoNumber)(args[0]);
@@ -276,6 +293,9 @@ public enum CronoFunction {
 	}
     }),
     MUL(new Function() {
+	public static final String _bad_type =
+	    "*: expected types :number :number, got %s %s";
+
 	public int arity() {
 	    return 2;
 	}
@@ -283,7 +303,8 @@ public enum CronoFunction {
 	    CronoNumber lhs = null, rhs = null;
 	    if(!(args[0] instanceof CronoNumber &&
 		 args[1] instanceof CronoNumber)) {
-		throw new RuntimeException("Invalid argument types to '+'");
+		throw new InterpreterException(_bad_type, args[0].typeId(),
+					       args[1].typeId());
 	    }
 	    
 	    lhs = (CronoNumber)(args[0]);
@@ -317,6 +338,9 @@ public enum CronoFunction {
 	}
     }),
     DIV(new Function() {
+	public static final String _bad_type =
+	    "/: expected types :number :number, got %s %s";
+
 	public int arity() {
 	    return 2;
 	}
@@ -324,7 +348,8 @@ public enum CronoFunction {
 	    CronoNumber lhs = null, rhs = null;
 	    if(!(args[0] instanceof CronoNumber &&
 		 args[1] instanceof CronoNumber)) {
-		throw new RuntimeException("Invalid argument types to '+'");
+		throw new InterpreterException(_bad_type, args[0].typeId(),
+					       args[1].typeId());
 	    }
 	    
 	    lhs = (CronoNumber)(args[0]);
@@ -372,8 +397,7 @@ public enum CronoFunction {
 	    }else if(args[0] instanceof CronoInteger) {
 		return args[0];
 	    }
-	    throw new RuntimeException(String.format(_bad_type,
-						     args[0].typeId().image));
+	    throw new InterpreterException(_bad_type, args[0].typeId());
 	}
 	public String toString() {
 	    return "int";
@@ -391,8 +415,7 @@ public enum CronoFunction {
 	    }else if(args[0] instanceof CronoCharacter) {
 		return args[0];
 	    }
-	    throw new RuntimeException(String.format(_bad_type,
-						     args[0].typeId().image));
+	    throw new InterpreterException(_bad_type, args[0].typeId());
 	}
 	public String toString() {
 	    return "char";
@@ -411,13 +434,76 @@ public enum CronoFunction {
 		return args[0];
 	    }
 	    
-	    throw new RuntimeException(String.format(_bad_type,
-						     args[0].typeId().image));
+	    throw new InterpreterException(_bad_type, args[0].typeId());
 	}
 	public String toString() {
 	    return "float";
 	}
     }),
+    /*
+    LOAD(new Function() {
+	public static final String _bad_type =
+	    "LOAD: expected :string, got %s";
+        public int arity() {
+	    return 1;
+        }
+        public CronoType run(Visitor v, CronoType[] args) {
+	    if(!(args[0] instanceof CronoString)) {
+		throw new InterpreterException(_bad_type, args[0].typeId());
+	    }
+	    
+	    return Nil.NIL;
+        }
+        public String toString() {
+	    return "load";
+        }
+    }),
+    *//*
+    PRINT(new Function() {
+        public int arity() {
+        }
+        public CronoType run(Visitor v, CronoType[] args) {
+        }
+        public String toString() {
+        }
+    }),
+    *//*
+    STRUCT(new Function() {
+        public int arity() {
+        }
+        public CronoType run(Visitor v, CronoType[] args) {
+        }
+        public String toString() {
+        }
+    }),
+    *//*
+    SUBSTRUCT(new Function() {
+        public int arity() {
+        }
+        public CronoType run(Visitor v, CronoType[] args) {
+        }
+        public String toString() {
+        }
+    }),
+    *//*
+    NEWSTRUCT(new Function() {
+        public int arity() {
+        }
+        public CronoType run(Visitor v, CronoType[] args) {
+        }
+        public String toString() {
+        }
+    }),
+    *//*
+    EVAL(new Function() {
+        public int arity() {
+        }
+        public CronoType run(Visitor v, CronoType[] args) {
+        }
+        public String toString() {
+        }
+    }),
+    */
     ;
     
     public final Function function;
