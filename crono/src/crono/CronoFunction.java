@@ -11,6 +11,7 @@ import crono.type.CronoCharacter;
 import crono.type.CronoFloat;
 import crono.type.CronoInteger;
 import crono.type.CronoNumber;
+import crono.type.CronoPrimitive;
 import crono.type.CronoString;
 import crono.type.CronoType;
 import crono.type.Function;
@@ -196,16 +197,88 @@ public enum CronoFunction {
 	    }
     }),
     EQ(new Function() {
-	    public int arity() {
-		return 2;
+	public int arity() {
+	    return 2;
+	}
+	public CronoType run(Visitor v, CronoType[] args) {
+	    return (args[0].equals(args[1])) ?
+		TruthValue.T : Nil.NIL;
+	}
+	public String toString() {
+	    return "=";
+	}
+    }),
+    LT(new Function() {
+	public static final String _bad_type =
+	    "<: expected :primitive :primitive, got %s %s";
+	public int arity() {
+	    return 2;
+	}
+	private Number resolve(CronoType type) {
+	    if(type instanceof CronoInteger) {
+		return ((Long)((CronoInteger)type).value);
+	    }else if(type instanceof CronoFloat) {
+		return  ((Double)((CronoFloat)type).value);
+	    }else if(type instanceof CronoCharacter) {
+		return ((Long)((long)((CronoCharacter)type).ch));
 	    }
-	    public CronoType run(Visitor v, CronoType[] args) {
-		return (args[0].equals(args[1])) ?
+	    return null;
+	}
+	public CronoType run(Visitor v, CronoType[] args) {
+	    if(!(args[0] instanceof CronoPrimitive &&
+		 args[1] instanceof CronoPrimitive)) {
+		throw new InterpreterException(_bad_type, args[0].typeId(),
+					       args[1].typeId());
+	    }
+	    
+	    Number lhs = resolve(args[0]);
+	    Number rhs = resolve(args[1]);
+	    if(lhs instanceof Double || rhs instanceof Double) {
+		return (lhs.doubleValue() < rhs.doubleValue()) ?
 		    TruthValue.T : Nil.NIL;
 	    }
-	    public String toString() {
-		return "=";
+	    return (lhs.longValue() < rhs.longValue()) ?
+		TruthValue.T : Nil.NIL;
+	}
+	public String toString() {
+	    return "<";
+	}
+    }),
+    GT(new Function() {
+	public static final String _bad_type =
+	    ">: expected :primitive :primitive, got %s %s";
+	public int arity() {
+	    return 2;
+	}
+	private Number resolve(CronoType type) {
+	    if(type instanceof CronoInteger) {
+		return ((Long)((CronoInteger)type).value);
+	    }else if(type instanceof CronoFloat) {
+		return  ((Double)((CronoFloat)type).value);
+	    }else if(type instanceof CronoCharacter) {
+		return ((Long)((long)((CronoCharacter)type).ch));
 	    }
+	    return null;
+	}
+	public CronoType run(Visitor v, CronoType[] args) {
+	    if(!(args[0] instanceof CronoPrimitive &&
+		 args[1] instanceof CronoPrimitive)) {
+		throw new InterpreterException(_bad_type, args[0].typeId(),
+					       args[1].typeId());
+	    }
+	    
+	    Number lhs = resolve(args[0]);
+	    Number rhs = resolve(args[1]);
+	    if(lhs instanceof Double || rhs instanceof Double) {
+		return (lhs.doubleValue() > rhs.doubleValue()) ?
+		    TruthValue.T : Nil.NIL;
+	    }
+	    return (lhs.longValue() > rhs.longValue()) ?
+		TruthValue.T : Nil.NIL;
+	}
+	public String toString() {
+	    return ">";
+	}
     }),
     ADD(new Function() {
 	public static final String _bad_type =
@@ -481,16 +554,46 @@ public enum CronoFunction {
 	    return "load";
         }
     }),
-    /*
     PRINT(new Function() {
         public int arity() {
+	    return 1;
         }
+	public boolean variadic() {
+	    return true;
+	}
         public CronoType run(Visitor v, CronoType[] args) {
+	    for(int i = 0; i < args.length; ++i) {
+		if(args[i] instanceof CronoString) {
+		    System.out.print(((CronoString)args[i]).image());
+		}else if(args[i] instanceof CronoCharacter) {
+		    System.out.print(((CronoCharacter)args[i]).ch);
+		}else {
+		    System.out.print(args[i]);
+		}
+	    }
+	    return Nil.NIL;
         }
         public String toString() {
+	    return "print";
         }
     }),
-    *//*
+    PRINTLN(new Function() {
+	    public int arity() {
+		return 1;
+	    }
+	    public boolean variadic() {
+		return true;
+	    }
+	    public CronoType run(Visitor v, CronoType[] args) {
+		PRINT.function.run(v, args);
+		System.out.println();
+		return Nil.NIL;
+	    }
+	    public String toString() {
+		return "println";
+	    }
+    }),
+    /*
     STRUCT(new Function() {
         public int arity() {
         }
