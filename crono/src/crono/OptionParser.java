@@ -102,7 +102,6 @@ public class OptionParser {
 		return ((int)'?');
 	    default:
 		optchar = args[current].substring(1);
-		current++;
 		done = true;
 		return -1;
 	    }
