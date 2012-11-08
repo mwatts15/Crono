@@ -15,6 +15,7 @@ public class CronoCharacter extends CronoPrimitive {
 	    break;
 	case 4:
 	    ch = CronoCharacter.escape(image.charAt(2));
+	    break;
 	default:
 	    throw new UnsupportedOperationException("Bad image length");
 	}

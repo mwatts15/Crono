@@ -85,10 +85,7 @@ Atom atom():
       if(debug) {
         System.out.println("Parser: Saw <CHAR>");
       }
-      if(n.image.length() == 4) {
-        return new CronoCharacter(n.image.charAt(2));
-      }
-      return new CronoCharacter(n.image.charAt(1));
+      return new CronoCharacter(n.image);
     }
   | n = <TYPEID> {
       if(debug) {
