@@ -130,7 +130,8 @@ public class Crono {
 		    CronoType head = parser.program();
 		    head.accept(v);
 		} catch(ParseException pe) {
-		    System.err.printf("Error parsing crono file: %s\n  %s\n");
+		    System.err.printf("Error parsing crono file: %s\n  %s\n",
+				      fname, pe);
 		}
 		
 		v.reset(); /*< Reset the visitor for the next file */
