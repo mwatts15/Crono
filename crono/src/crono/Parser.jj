@@ -16,6 +16,7 @@ import crono.type.Cons;
 import crono.type.CronoCharacter;
 import crono.type.CronoFloat;
 import crono.type.CronoInteger;
+import crono.type.CronoString;
 import crono.type.CronoType;
 import crono.type.Nil;
 import crono.type.Symbol;
@@ -100,6 +101,12 @@ Atom atom():
         System.out.println("Parser: Saw <SYMBOL>");
       }
       return new Symbol(n.image);
+    }
+  | n = <STRING> {
+      if(debug) {
+        System.out.println("Parser: Saw <STRING>");
+      }
+      return new CronoString(n.image);
     }
 }
 
