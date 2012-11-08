@@ -34,7 +34,7 @@
 (define <I> (\ (x) x))
   
 %Constant combinator
-(define <K> (\ (x y) x)
+(define <K> (\ (x y) x))
 
 %General application combinator
 (define <S> (\ (f g x) (f x (g x))))
@@ -57,7 +57,4 @@
 (define <Y> (\ (f)
   (\ (x) (f (x x))) (\ (x) (f (x x))) ))
 
-
-  
-(define <COND> (\ (p f g x)
-  (if (p x) (f x) (g x))))
+(define <COND> (\ (p f g x) (if (p x) (f x) (g x))))
