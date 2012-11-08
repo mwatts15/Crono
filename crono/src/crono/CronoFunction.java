@@ -98,7 +98,8 @@ public enum CronoFunction {
 	    public CronoType run(Visitor v, CronoType[] args) {
 		if(!(args[0] instanceof Cons)) {
 		    throw new InterpreterException(_bad_type,
-						   args[0].typeId());
+						   args[0].typeId(),
+						   args[1].typeId());
 		}
 		
 		List<CronoType> list = ((Cons)args[0]).toList();
