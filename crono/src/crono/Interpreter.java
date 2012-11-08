@@ -150,7 +150,7 @@ public class Interpreter extends Visitor {
 					  env_stack.peek());
 	    }
 	    if(arglen > nargs && !((Function)value).variadic()) {
-		throw new RuntimeException(String.format(_too_many_args,
+		throw new RuntimeException(String.format(_too_many_args, value,
 							 arglen, nargs));
 	    }
 	    
