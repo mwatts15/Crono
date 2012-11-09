@@ -1,8 +1,8 @@
 package crono;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.InputStream;
+import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -93,7 +93,7 @@ public class Crono {
 	}
 	
 	if(interactive && files.size() == 0) {
-	    parser = new Parser(System.in);
+	    parser = new Parser(new InputStreamReader(System.in));
 	    System.out.println(introstr);
 	    
 	    System.out.printf("Environment:\n%s\n", interp.env_stack.peek());
@@ -119,7 +119,7 @@ public class Crono {
 	}else {
 	    for(String fname : files) {
 		try {
-		    parser = new Parser(new FileInputStream(fname));
+		    parser = new Parser(new FileReader(fname));
 		}catch(FileNotFoundException fnfe) {
 		    System.err.printf("Could not find %s:\n  %s\n", fname,
 				      fnfe.toString());
