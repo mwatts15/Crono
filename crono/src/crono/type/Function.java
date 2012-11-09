@@ -5,30 +5,30 @@ import crono.Visitor;
 public abstract class Function extends Atom {
     public static final TypeId TYPEID = new TypeId(":function", Function.class,
 						   Atom.TYPEID);
-    
+
     public enum EvalType {
-	FULL("full", 2),
-	PARTIAL("partial", 1),
-	NONE("none", 0),
-	;
-	
-	public final String name;
-	public final int level;
-	private EvalType(String s, int l) {
-	    this.level = l;
-	    this.name = s;
-	}
-	public String toString() {
-	    return name;
-	}
+        FULL("full", 2),
+            PARTIAL("partial", 1),
+            NONE("none", 0),
+            ;
+
+        public final String name;
+        public final int level;
+        private EvalType(String s, int l) {
+            this.level = l;
+            this.name = s;
+        }
+        public String toString() {
+            return name;
+        }
     }
-    
+
     public final TypeId[] args;
     public final TypeId returntype;
     public final boolean variadic;
     public final EvalType eval;
     public final int arity;
-    
+
     protected Function() {
 	this(null, null, 0, false, EvalType.FULL);
     }
@@ -50,9 +50,9 @@ public abstract class Function extends Atom {
 	this.variadic = variadic;
 	this.eval = eval;
     }
-    
+
     public abstract CronoType run(Visitor v, CronoType[] args);
-    
+
     public TypeId typeId() {
 	return Function.TYPEID;
     }

@@ -19,40 +19,40 @@ import crono.type.TypeId;
 public class Interpreter extends Visitor {
     private static final String _scope_err = "No object %s in scope";
     private static final String _too_many_args =
-	"Too many arguments to %s: %d/%d recieved";
+        "Too many arguments to %s: %d/%d recieved";
     private static final String _type_scope_err = "No type %s in scope";
     private static final String _type_mismatch =
 	"Function '%s' expected arguments %s; got %s";
-    
+
     public boolean show_env;
     public boolean show_closure;
     public boolean dprint_enable;
     public boolean dprint_ident;
     public boolean dynamic;
-    
+
     protected int indent_level;
     protected Function.EvalType eval;
     protected Types types;
-    
+
     public Interpreter() {
-	show_env = false;
-	show_closure = false;
-	dprint_enable = false;
-	dprint_ident = true;
-	dynamic = false;
-	
-	indent_level = 0;
-	eval = Function.EvalType.FULL;
-	
-	env_stack = new Stack<Environment>();
-	reset(); /*< Set up initial environment and types */
+        show_env = false;
+        show_closure = false;
+        dprint_enable = false;
+        dprint_ident = true;
+        dynamic = false;
+
+        indent_level = 0;
+        eval = Function.EvalType.FULL;
+
+        env_stack = new Stack<Environment>();
+        reset(); /*< Set up initial environment and types */
     }
     public void reset() {
-	env_stack.clear();
-	env_stack.push(new Environment());
-	types = new Types();
+        env_stack.clear();
+        env_stack.push(new Environment());
+        types = new Types();
     }
-    
+
     public CronoType visit(Cons c) {
 	if(c.isQuoted()) {
 	    c.quote(false);
@@ -61,16 +61,16 @@ public class Interpreter extends Visitor {
 	if(eval == Function.EvalType.NONE) {
 	    return c;
 	}
-	
+
 	Iterator<CronoType> iter = c.iterator();
 	if(!(iter.hasNext())) {
 	    return c; /*< C is an empty list (may be Nil or T) */
 	}
-	
+
 	CronoType value = iter.next().accept(this);
 	if(value instanceof Function) {
 	    Function fun = ((Function)value);
-	    
+
 	    Function.EvalType reserve = eval;
 	    /* Set the eval type to the current function's type; this keeps
 	     * type errors in builtins from happening, ex:
@@ -86,7 +86,7 @@ public class Interpreter extends Visitor {
 		args.add(iter.next().accept(this));
 	    }
 	    eval = reserve;
-	    
+
 	    int arglen = args.size();
 	    int nargs = fun.arity;
 	    if(arglen < nargs) {
@@ -95,7 +95,7 @@ public class Interpreter extends Visitor {
 		     * function to return it properly. */
 		    return fun;
 		}
-		
+
 		/* Curry it */
 		if(fun instanceof LambdaFunction) {
 		    LambdaFunction lfun = ((LambdaFunction)fun);
@@ -106,7 +106,7 @@ public class Interpreter extends Visitor {
 		    }
 		    /* We want to preserve the current environment */
 		    env = new Environment(env);
-		    
+
 		    /* Put known values into the new environment */
 		    for(int i = 0; i < arglen; ++i) {
 			env.put(lfun.arglist[i], args.get(i));
@@ -118,7 +118,7 @@ public class Interpreter extends Visitor {
 			largs.add(lfun.arglist[i]);
 			env.remove(lfun.arglist[i]);
 		    }
-		    
+
 		    /* Evaluate the body as much as possible */
 		    reserve = eval;
 		    eval = Function.EvalType.PARTIAL;
@@ -126,19 +126,19 @@ public class Interpreter extends Visitor {
 		    CronoType lbody = lfun.body.accept(this);
 		    env_stack.pop();
 		    eval = reserve;
-		    
+
 		    /* Return the new, partially evaluated lambda */
 		    Symbol[] arglist = new Symbol[largs.size()];
 		    return new LambdaFunction(largs.toArray(arglist),
 					      lbody, lfun.environment);
 		}
 		/* Builtin partial evaluation */
-		
+
 		List<CronoType> body = new LinkedList<CronoType>();
 		body.add(fun);
-		
+
 		body.addAll(args); /*< Dump args in order into the new cons */
-		
+
 		/* Add symbols for missing args */
 		List<Symbol> arglist = new ArrayList<Symbol>();
 		Symbol sym;
@@ -147,7 +147,7 @@ public class Interpreter extends Visitor {
 		    body.add(sym);
 		    arglist.add(sym);
 		}
-		
+
 		/* Create a new lambda */
 		Symbol[] narglist = new Symbol[arglist.size()];
 		return new LambdaFunction(arglist.toArray(narglist),
@@ -158,7 +158,7 @@ public class Interpreter extends Visitor {
 		throw new RuntimeException(String.format(_too_many_args, fun,
 							 arglen, nargs));
 	    }
-	    
+
 	    /* Full evaluation */
 	    if(fun instanceof LambdaFunction && dynamic) {
 		/* We have to trick the lambda function if we want dynamic
@@ -187,7 +187,7 @@ public class Interpreter extends Visitor {
 		return Cons.fromList(args);
 	    }
 	}
-	
+
 	/* The initial value is not a function */
 	List<CronoType> list = new LinkedList<CronoType>();
 	list.add(value);
@@ -196,40 +196,40 @@ public class Interpreter extends Visitor {
 	}
 	return Cons.fromList(list);
     }
-    
+
     public CronoType visit(Atom a) {
-	if(a.isQuoted()) {
-	    a.quote(false);
-	    return a;
-	}
-	if(eval == Function.EvalType.NONE) {
-	    return a;
-	}
-	
-	CronoType t = a;
-	if(t instanceof Symbol) {
-	    t = env_stack.peek().get((Symbol)a);
-	    if(t == null) {
-		if(eval == Function.EvalType.FULL) {
-		    throw new RuntimeException(String.format(_scope_err,
-							     a.toString()));
-		}
-		t = a;
-	    }
-	}
-	/* Not else-if, so that we perform a double-resolution on a symbol that
-	 * represents a TypeId */
-	if(t instanceof TypeId) {
-	    CronoType res = t; /*< Save symbol resolution in new CronoType */
-	    t = types.get((TypeId)t);
-	    if(t == null) {
-		if(eval == Function.EvalType.FULL) {
-		    throw new RuntimeException(String.format(_type_scope_err,
-							     a.toString()));
-		}
-		t = res; /*< Revert to symbol resolution */
-	    }
-	}
-	return t;
+        if(a.isQuoted()) {
+            a.quote(false);
+            return a;
+        }
+        if(eval == Function.EvalType.NONE) {
+            return a;
+        }
+
+        CronoType t = a;
+        if(t instanceof Symbol) {
+            t = env_stack.peek().get((Symbol)a);
+            if(t == null) {
+                if(eval == Function.EvalType.FULL) {
+                    throw new RuntimeException(String.format(_scope_err,
+                                a.toString()));
+                }
+                t = a;
+            }
+        }
+        /* Not else-if, so that we perform a double-resolution on a symbol that
+         * represents a TypeId */
+        if(t instanceof TypeId) {
+            CronoType res = t; /*< Save symbol resolution in new CronoType */
+            t = types.get((TypeId)t);
+            if(t == null) {
+                if(eval == Function.EvalType.FULL) {
+                    throw new RuntimeException(String.format(_type_scope_err,
+                                a.toString()));
+                }
+                t = res; /*< Revert to symbol resolution */
+            }
+        }
+        return t;
     }
 }
