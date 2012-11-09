@@ -4,10 +4,10 @@ public class TypeId extends Atom {
     public static final TypeId TYPEID = new TypeId(":type-id", TypeId.class,
 						   Atom.TYPEID);
     
-    public String image;
-    public Class type;
+    public final String image;
+    public final Class type;
     
-    public TypeId parent;
+    public final TypeId parent;
     
     public TypeId(String image, Class type) {
 	this(image, type, null);
