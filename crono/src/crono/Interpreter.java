@@ -32,7 +32,6 @@ public class Interpreter extends Visitor {
     
     protected int indent_level;
     protected Function.EvalType eval;
-    protected Types types;
     
     public Interpreter() {
 	show_env = false;
@@ -49,8 +48,7 @@ public class Interpreter extends Visitor {
     }
     public void reset() {
 	env_stack.clear();
-	env_stack.push(new Environment());
-	types = new Types();
+	pushEnv(new Environment());
     }
     
     public CronoType visit(Cons c) {
@@ -99,7 +97,7 @@ public class Interpreter extends Visitor {
 		/* Curry it */
 		if(fun instanceof LambdaFunction) {
 		    LambdaFunction lfun = ((LambdaFunction)fun);
-		    Environment env = env_stack.peek();
+		    Environment env = getEnv();
 		    if(!dynamic) {
 			/* Use the lambda's stored environment */
 			env = lfun.environment;
@@ -122,9 +120,9 @@ public class Interpreter extends Visitor {
 		    /* Evaluate the body as much as possible */
 		    reserve = eval;
 		    eval = Function.EvalType.PARTIAL;
-		    env_stack.push(env);
+		    pushEnv(env);
 		    CronoType lbody = lfun.body.accept(this);
-		    env_stack.pop();
+		    popEnv();
 		    eval = reserve;
 		    
 		    /* Return the new, partially evaluated lambda */
@@ -151,8 +149,7 @@ public class Interpreter extends Visitor {
 		/* Create a new lambda */
 		Symbol[] narglist = new Symbol[arglist.size()];
 		return new LambdaFunction(arglist.toArray(narglist),
-					  Cons.fromList(body),
-					  env_stack.peek());
+					  Cons.fromList(body), getEnv());
 	    }
 	    if(arglen > nargs && !fun.variadic) {
 		throw new RuntimeException(String.format(_too_many_args, fun,
@@ -165,8 +162,8 @@ public class Interpreter extends Visitor {
 		 * scoping. I hate making so many objects left and right, but
 		 * this is the easiest way to do what I want here. */
 		LambdaFunction lfun = ((LambdaFunction)fun);
-		lfun = new LambdaFunction(lfun.arglist, lfun.body,
-					  env_stack.peek());
+		lfun = new LambdaFunction(lfun.arglist, lfun.body, getEnv());
+		
 		CronoType[] argarray = new CronoType[args.size()];
 		return lfun.run(this, args.toArray(argarray));
 	    }
@@ -208,7 +205,7 @@ public class Interpreter extends Visitor {
 	
 	CronoType t = a;
 	if(t instanceof Symbol) {
-	    t = env_stack.peek().get((Symbol)a);
+	    t = getEnv().get((Symbol)a);
 	    if(t == null) {
 		if(eval == Function.EvalType.FULL) {
 		    throw new RuntimeException(String.format(_scope_err,
@@ -221,11 +218,10 @@ public class Interpreter extends Visitor {
 	 * represents a TypeId */
 	if(t instanceof TypeId) {
 	    CronoType res = t; /*< Save symbol resolution in new CronoType */
-	    t = types.get((TypeId)t);
+	    t = getEnv().getType((TypeId)t);
 	    if(t == null) {
 		if(eval == Function.EvalType.FULL) {
-		    throw new RuntimeException(String.format(_type_scope_err,
-							     a.toString()));
+		    throw new InterpreterException(_type_scope_err, a);
 		}
 		t = res; /*< Revert to symbol resolution */
 	    }

@@ -1,7 +1,9 @@
 package crono;
 
+import crono.type.CronoStruct;
 import crono.type.CronoType;
 import crono.type.Symbol;
+import crono.type.TypeId;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,6 +13,8 @@ public class Environment {
     public boolean show_builtins, multiline, show_types;
     
     private Map<String, CronoType> symbols;
+    private Map<String, CronoStruct> structs;
+    private Map<String, TypeId> types;
     private String repr;
     private boolean dirty;
     
@@ -24,6 +28,22 @@ public class Environment {
 	multiline = true;
 	show_types = false;
 	dirty = true; /*< dirty flag to rebuild string repr */
+	
+	this.put(crono.type.Cons.TYPEID);
+	this.put(crono.type.CronoArray.TYPEID);
+	this.put(crono.type.CronoCharacter.TYPEID);
+	this.put(crono.type.CronoFloat.TYPEID);
+	this.put(crono.type.CronoInteger.TYPEID);
+	this.put(crono.type.CronoNumber.TYPEID);
+	this.put(crono.type.CronoPrimitive.TYPEID);
+	this.put(crono.type.CronoString.TYPEID);
+	this.put(crono.type.CronoStruct.TYPEID);
+	this.put(crono.type.CronoType.TYPEID);
+	this.put(crono.type.CronoVector.TYPEID);
+	this.put(crono.type.Function.TYPEID);
+	this.put(crono.type.Nil.TYPEID);
+	this.put(crono.type.Symbol.TYPEID);
+	this.put(crono.type.TypeId.TYPEID);
 	
 	if(builtins) {
 	    for(CronoFunction cf : CronoFunction.values()) {
@@ -40,6 +60,15 @@ public class Environment {
 	dirty = env.dirty;
     }
     
+    public void put(CronoStruct struct) {
+	dirty = true;
+	this.structs.put(struct.name, struct);
+    }
+    public void put(TypeId type) {
+	dirty = true;
+	this.types.put(type.image, type);
+    }
+    
     public void put(Symbol sym, CronoType value) {
 	dirty = true;
 	symbols.put(sym.toString(), value);
@@ -47,6 +76,16 @@ public class Environment {
     
     public CronoType get(Symbol sym) {
 	return symbols.get(sym.toString());
+    }
+    
+    public CronoStruct getStruct(Symbol sym) {
+	return structs.get(sym.toString());
+    }
+    public TypeId getType(TypeId id) {
+	return getType(id.image);
+    }
+    public TypeId getType(String str) {
+	return types.get(str);
     }
     
     public void remove(Symbol sym) {

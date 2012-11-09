@@ -21,9 +21,10 @@ import crono.type.CronoType;
 import crono.type.Nil;
 import crono.type.Symbol;
 import crono.type.TruthValue;
+import crono.type.TypeId;
 
 public class Parser {
-  public static Types types = new Types();
+  public Environment env;
   
   public static boolean debug = false;
 }
@@ -91,7 +92,11 @@ Atom atom():
       if(debug) {
         System.out.println("Parser: Saw <TYPEID>");
       }
-      types.get(n.image);
+      TypeId id = null;
+      if(env != null) {
+        id = env.getType(n.image);
+      }
+      return ((id == null) ? new TypeId(n.image, null) : id);
     }
   | n = <SYMBOL> {
       if(debug) {
