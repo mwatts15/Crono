@@ -23,15 +23,34 @@ public abstract class Function extends Atom {
 	}
     }
     
-    /* Supplied defaults here */
-    public boolean variadic() {
-	return false;
+    public final TypeId[] args;
+    public final TypeId returntype;
+    public final boolean variadic;
+    public final EvalType eval;
+    public final int arity;
+    
+    protected Function() {
+	this(null, null, 0, false, EvalType.FULL);
     }
-    public EvalType eval() {
-	return EvalType.FULL;
+    public Function(TypeId[] args, TypeId ret, int arity) {
+	this(args, ret, arity, false, EvalType.FULL);
     }
-
-    public abstract int arity();
+    public Function(TypeId[] args, TypeId ret, int arity, boolean variadic) {
+	this(args, ret, arity, variadic, EvalType.FULL);
+    }
+    public Function(TypeId[] args, TypeId ret, int arity, EvalType eval) {
+	this(args, ret, arity, false, eval);
+    }
+    public Function(TypeId[] args, TypeId ret, int arity, boolean variadic,
+		    EvalType eval)
+    {
+	this.args = args;
+	this.returntype = ret;
+	this.arity = arity;
+	this.variadic = variadic;
+	this.eval = eval;
+    }
+    
     public abstract CronoType run(Visitor v, CronoType[] args);
     
     public TypeId typeId() {

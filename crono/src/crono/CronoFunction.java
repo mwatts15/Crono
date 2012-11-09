@@ -3,6 +3,7 @@ package crono;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -20,12 +21,20 @@ import crono.type.Nil;
 import crono.type.LambdaFunction;
 import crono.type.Symbol;
 import crono.type.TruthValue;
+import crono.type.TypeId;
 
+/**
+ * Define all builtins here. If the function is not variadic, don't define the
+ * boolean variadic() method (defaults to false).
+ * If the function fully evaluates its arguments don't define
+ * EvalType eval() (defaults to EvalType.FULL)
+ * The length of TypeId[] args() must be at least as large as int arity(), but
+ * may be larger if the function is variadic (used for structs).
+ */
 public enum CronoFunction {
-    CONS(new Function() {
-	public int arity() {
-	    return 2;
-	}
+    CONS(new Function(new TypeId[]{CronoType.TYPEID, CronoType.TYPEID},
+		      Cons.TYPEID, 2)
+    {
 	public CronoType run(Visitor v, CronoType[] args) {
 	    return new Cons(args[0], args[1]);
 	}
@@ -33,11 +42,10 @@ public enum CronoFunction {
 	    return "cons";
 	}
     }),
-    CAR(new Function() {
-	public static final String _not_cons = "%s is not a cons cell";
-	public int arity() {
-	    return 1;
-	}
+    CAR(new Function(new TypeId[]{Cons.TYPEID}, CronoType.TYPEID, 1)
+    {
+	private static final String _not_cons = "%s is not a cons cell";
+	
         public CronoType run(Visitor v, CronoType[] args) {
 	    if(!(args[0] instanceof Cons)) {
 		throw new InterpreterException(_not_cons, args[0]);
@@ -48,11 +56,10 @@ public enum CronoFunction {
 	    return "car";
 	}
     }),
-    CDR(new Function() {
-	public static final String _not_cons = "%s is not a cons cell";
-	public int arity() {
-	    return 1;
-	}
+    CDR(new Function(new TypeId[]{Cons.TYPEID}, CronoType.TYPEID, 1)
+    {
+	private static final String _not_cons = "%s is not a cons cell";
+	
 	public CronoType run(Visitor v, CronoType[] args) {
 	    if(!(args[0] instanceof Cons)) {
 		throw new InterpreterException(_not_cons, args[0]);
@@ -63,15 +70,12 @@ public enum CronoFunction {
 	    return "cdr";
 	}
     }),
-    DEFINE(new Function() {
-	public static final String _bad_type =
-	    "DEFINE: expected :string, got %s";
-	public int arity() {
-	    return 2;
-	}
-	public EvalType eval() {
-	    return EvalType.NONE;
-	}
+    DEFINE(new Function(new TypeId[]{Symbol.TYPEID, CronoType.TYPEID},
+			CronoType.TYPEID, 2, EvalType.NONE)
+    {
+	private static final String _bad_type =
+	    "DEFINE: expected :symbol, got %s";
+	
 	public CronoType run(Visitor v, CronoType[]args) {
 	    if(!(args[0] instanceof Symbol)) {
 		throw new InterpreterException(_bad_type, args[0].typeId());
@@ -84,56 +88,76 @@ public enum CronoFunction {
 	    return "define";
 	}
     }),
-    LAMBDA(new Function() {
-	    public static final String _bad_type =
-		"\\: expected :cons :any, got %s, %s";
-	    public static final String _bad_arg =
-		"\\: arguments must be :symbol, got %s";
+    UNDEFINE(new Function(new TypeId[]{Symbol.TYPEID}, Nil.TYPEID, 1,
+			  EvalType.NONE)
+    {
+	private static final String _bad_type =
+	    "UNDEF: expected :symbol, got %s";
+	
+	public CronoType run(Visitor v, CronoType[] args) {
+	    StringBuilder builder = new StringBuilder();
+	    boolean errors = false;
+	    for(CronoType ct : args) {
+		if(!(ct instanceof Symbol)) {
+		    builder.append(String.format(_bad_type, ct.typeId()));
+		    builder.append('\n');
+		    errors = true;
+		    continue;
+		}
+		v.getEnv().remove((Symbol)ct);
+	    }
 	    
-	    public int arity() {
-		return 2;
+	    if(errors) {
+		/* Remove last newline */
+		builder.deleteCharAt(builder.length() - 1);
+		throw new InterpreterException(builder.toString());
 	    }
-	    public EvalType eval() {
-		return EvalType.NONE;
-	    }
-	    public CronoType run(Visitor v, CronoType[] args) {
-		if(!(args[0] instanceof Cons)) {
-		    throw new InterpreterException(_bad_type,
-						   args[0].typeId(),
-						   args[1].typeId());
-		}
-		
-		List<CronoType> list = ((Cons)args[0]).toList();
-		for(CronoType item : list) {
-		    if(!(item instanceof Symbol)) {
-			throw new InterpreterException(_bad_arg,item.typeId());
-		    }
-		}
-		
-		Symbol[] arglist = new Symbol[list.size()];
-		return new LambdaFunction(list.toArray(arglist), args[1],
-					  v.getEnv());
-	    }
-	    public String toString() {
-		return "\\";
-	    }
+	    return Nil.NIL;
+	}
+	public String toString() {
+	    return "undef";
+	}
     }),
-    LET(new Function() {
-	public static final String _subst_list_type =
+    LAMBDA(new Function(new TypeId[]{Cons.TYPEID, CronoType.TYPEID},
+			Function.TYPEID, 2, true, EvalType.NONE)
+    {
+	private static final String _bad_type =
+	    "\\: expected :cons :any, got %s, %s";
+	private static final String _bad_arg =
+	    "\\: arguments must be :symbol, got %s";
+	
+	public CronoType run(Visitor v, CronoType[] args) {
+	    if(!(args[0] instanceof Cons)) {
+		throw new InterpreterException(_bad_type,
+					       args[0].typeId(),
+					       args[1].typeId());
+	    }
+	    
+	    List<CronoType> list = ((Cons)args[0]).toList();
+	    for(CronoType item : list) {
+		if(!(item instanceof Symbol)) {
+		    throw new InterpreterException(_bad_arg,item.typeId());
+		}
+	    }
+	    
+	    Symbol[] arglist = new Symbol[list.size()];
+	    return new LambdaFunction(list.toArray(arglist), args[1],
+				      v.getEnv());
+	}
+	public String toString() {
+	    return "\\";
+	}
+    }),
+    LET(new Function(new TypeId[]{Cons.TYPEID, CronoType.TYPEID},
+		     CronoType.TYPEID, 2, true, EvalType.NONE)
+    {
+	private static final String _subst_list_type =
 	    "LET: substitution list must be :cons, got %s";
-	public static final String _subst_not_cons =
+	private static final String _subst_not_cons =
 	    "LET: expected :cons in substitution list, got %s";
-	public static final String _subst_not_sym = 
+	private static final String _subst_not_sym = 
 	    "LET: argument names numst be :symbol, got %s";
-	public int arity() {
-	    return 2;
-	}
-	public boolean variadic() {
-	    return true;
-	}
-	public EvalType eval() {
-	    return EvalType.NONE;
-	}
+	
 	public CronoType run(Visitor v, CronoType[] args) {
 	    if(!(args[0] instanceof Cons)) {
 		throw new InterpreterException(_subst_list_type,
@@ -178,28 +202,24 @@ public enum CronoFunction {
 	    return "let";
 	}
     }),
-    IF(new Function() {
-	    public int arity() {
-		return 3;
+    IF(new Function(new TypeId[]{CronoType.TYPEID, CronoType.TYPEID,
+				 CronoType.TYPEID},
+	    CronoType.TYPEID, 3, EvalType.NONE)
+    {
+	public CronoType run(Visitor v, CronoType[] args) {
+	    CronoType check = args[0].accept(v);
+	    if(check != Nil.NIL) {
+		return args[1].accept(v);
 	    }
-	    public EvalType eval() {
-		return EvalType.NONE;
-	    }
-	    public CronoType run(Visitor v, CronoType[] args) {
-		CronoType check = args[0].accept(v);
-		if(check != Nil.NIL) {
-		    return args[1].accept(v);
-		}
-		return args[2].accept(v);
-	    }
-	    public String toString() {
-		return "if";
-	    }
-    }),
-    EQ(new Function() {
-	public int arity() {
-	    return 2;
+	    return args[2].accept(v);
 	}
+        public String toString() {
+	    return "if";
+	}
+    }),
+    EQ(new Function(new TypeId[]{CronoType.TYPEID, CronoType.TYPEID},
+		    Cons.TYPEID, 2)
+    {
 	public CronoType run(Visitor v, CronoType[] args) {
 	    return (args[0].equals(args[1])) ?
 		TruthValue.T : Nil.NIL;
@@ -208,12 +228,12 @@ public enum CronoFunction {
 	    return "=";
 	}
     }),
-    LT(new Function() {
-	public static final String _bad_type =
+    LT(new Function(new TypeId[]{CronoPrimitive.TYPEID, CronoPrimitive.TYPEID},
+		    Cons.TYPEID, 2)
+    {
+	private static final String _bad_type =
 	    "<: expected :primitive :primitive, got %s %s";
-	public int arity() {
-	    return 2;
-	}
+	
 	private Number resolve(CronoType type) {
 	    if(type instanceof CronoInteger) {
 		return ((Long)((CronoInteger)type).value);
@@ -244,12 +264,12 @@ public enum CronoFunction {
 	    return "<";
 	}
     }),
-    GT(new Function() {
-	public static final String _bad_type =
+    GT(new Function(new TypeId[]{CronoPrimitive.TYPEID, CronoPrimitive.TYPEID},
+		    Cons.TYPEID, 2)
+    {
+	private static final String _bad_type =
 	    ">: expected :primitive :primitive, got %s %s";
-	public int arity() {
-	    return 2;
-	}
+	
 	private Number resolve(CronoType type) {
 	    if(type instanceof CronoInteger) {
 		return ((Long)((CronoInteger)type).value);
@@ -280,12 +300,12 @@ public enum CronoFunction {
 	    return ">";
 	}
     }),
-    ADD(new Function() {
-	public static final String _bad_type =
+    ADD(new Function(new TypeId[]{CronoNumber.TYPEID, CronoNumber.TYPEID},
+		     CronoNumber.TYPEID, 2)
+    {
+	private static final String _bad_type =
 	    "+: expected types :number :number, got %s %s";
-	public int arity() {
-	    return 2;
-	}
+	
 	public CronoType run(Visitor v, CronoType[] args) {
 	    CronoNumber lhs = null, rhs = null;
 	    if(!(args[0] instanceof CronoNumber &&
@@ -324,13 +344,12 @@ public enum CronoFunction {
 	    return "+";
 	}
     }),
-    SUB(new Function() {
-	public static final String _bad_type =
+    SUB(new Function(new TypeId[]{CronoNumber.TYPEID, CronoNumber.TYPEID},
+		     CronoNumber.TYPEID, 2)
+    {
+	private static final String _bad_type =
 	    "-: expected types :number :number, got %s %s";
-
-	public int arity() {
-	    return 2;
-	}
+	
 	public CronoType run(Visitor v, CronoType[] args) {
 	    CronoNumber lhs = null, rhs = null;
 	    if(!(args[0] instanceof CronoNumber &&
@@ -369,13 +388,12 @@ public enum CronoFunction {
 	    return "-";
 	}
     }),
-    MUL(new Function() {
-	public static final String _bad_type =
+    MUL(new Function(new TypeId[]{CronoNumber.TYPEID, CronoNumber.TYPEID},
+		     CronoNumber.TYPEID, 2)
+    {
+	private static final String _bad_type =
 	    "*: expected types :number :number, got %s %s";
-
-	public int arity() {
-	    return 2;
-	}
+	
 	public CronoType run(Visitor v, CronoType[] args) {
 	    CronoNumber lhs = null, rhs = null;
 	    if(!(args[0] instanceof CronoNumber &&
@@ -414,13 +432,12 @@ public enum CronoFunction {
 	    return "*";
 	}
     }),
-    DIV(new Function() {
-	public static final String _bad_type =
+    DIV(new Function(new TypeId[]{CronoNumber.TYPEID, CronoNumber.TYPEID},
+		     CronoNumber.TYPEID, 2)
+    {
+	private static final String _bad_type =
 	    "/: expected types :number :number, got %s %s";
-
-	public int arity() {
-	    return 2;
-	}
+	
 	public CronoType run(Visitor v, CronoType[] args) {
 	    CronoNumber lhs = null, rhs = null;
 	    if(!(args[0] instanceof CronoNumber &&
@@ -460,12 +477,11 @@ public enum CronoFunction {
 	    return "/";
 	}
     }),
-    INT(new Function() {
+    INT(new Function(new TypeId[]{CronoPrimitive.TYPEID},CronoInteger.TYPEID,1)
+    {
 	public static final String _bad_type =
 	    "INT: Excepted one of :char, :float, or :int; got %s";
-        public int arity() {
-	    return 1;
-	}
+	
 	public CronoType run(Visitor v, CronoType[] args) {
 	    if(args[0] instanceof CronoCharacter) {
 		return new CronoInteger(((long)((CronoCharacter)args[0]).ch));
@@ -480,15 +496,17 @@ public enum CronoFunction {
 	    return "int";
 	}
     }),
-    CHAR(new Function() {
-	public static final String _bad_type =
+    CHAR(new Function(new TypeId[]{CronoPrimitive.TYPEID},
+		      CronoCharacter.TYPEID, 1)
+    {
+	private static final String _bad_type =
 	    "CHAR: expected one of :int, or :char; got %s";
-	public int arity() {
-	    return 1;
-	}
+	
 	public CronoType run(Visitor v, CronoType[] args) {
 	    if(args[0] instanceof CronoInteger) {
 		return new CronoCharacter((char)((CronoInteger)args[0]).value);
+	    }else if(args[0] instanceof CronoFloat) {
+		return new CronoCharacter((char)((CronoFloat)args[0]).value);
 	    }else if(args[0] instanceof CronoCharacter) {
 		return args[0];
 	    }
@@ -498,15 +516,16 @@ public enum CronoFunction {
 	    return "char";
 	}
     }),
-    FLOAT(new Function() {
-	public static final String _bad_type =
+    FLOAT(new Function(new TypeId[]{CronoPrimitive.TYPEID},CronoFloat.TYPEID,1)
+    {
+	private static final String _bad_type =
 	    "FLOAT: expected one of :int, or :float; got %s";
-	public int arity() {
-	    return 1;
-	}
+	
 	public CronoType run(Visitor v, CronoType[] args) {
 	    if(args[0] instanceof CronoInteger) {
 		return new CronoFloat((double)((CronoInteger)args[0]).value);
+	    }else if(args[0] instanceof CronoCharacter) {
+		return new CronoFloat((double)((CronoCharacter)args[0]).ch);
 	    }else if(args[0] instanceof CronoFloat) {
 		return args[0];
 	    }
@@ -517,16 +536,15 @@ public enum CronoFunction {
 	    return "float";
 	}
     }),
-    LOAD(new Function() {
-	public static final String _bad_type =
+    LOAD(new Function(new TypeId[]{CronoString.TYPEID}, CronoType.TYPEID, 1)
+    {
+	private static final String _bad_type =
 	    "LOAD: expected :string, got %s";
-	public static final String _file_not_found =
+	private static final String _file_not_found =
 	    "LOAD: could not open file %s";
-	public static final String _bad_parse =
+	private static final String _bad_parse =
 	    "LOAD: error parsing file:\n%s";
-        public int arity() {
-	    return 1;
-        }
+	
         public CronoType run(Visitor v, CronoType[] args) {
 	    if(!(args[0] instanceof CronoString)) {
 		throw new InterpreterException(_bad_type, args[0].typeId());
@@ -554,13 +572,8 @@ public enum CronoFunction {
 	    return "load";
         }
     }),
-    PRINT(new Function() {
-        public int arity() {
-	    return 1;
-        }
-	public boolean variadic() {
-	    return true;
-	}
+    PRINT(new Function(new TypeId[]{CronoType.TYPEID}, Nil.TYPEID, 1, true)
+    {
         public CronoType run(Visitor v, CronoType[] args) {
 	    for(int i = 0; i < args.length; ++i) {
 		if(args[i] instanceof CronoString) {
@@ -577,32 +590,28 @@ public enum CronoFunction {
 	    return "print";
         }
     }),
-    PRINTLN(new Function() {
-	    public int arity() {
-		return 1;
-	    }
-	    public boolean variadic() {
-		return true;
-	    }
-	    public CronoType run(Visitor v, CronoType[] args) {
-		PRINT.function.run(v, args);
-		System.out.println();
-		return Nil.NIL;
-	    }
-	    public String toString() {
-		return "println";
-	    }
+    PRINTLN(new Function(new TypeId[]{CronoType.TYPEID}, Nil.TYPEID, 1, true)
+    {
+	public CronoType run(Visitor v, CronoType[] args) {
+	    PRINT.function.run(v, args);
+	    System.out.println();
+	    return Nil.NIL;
+	}
+	public String toString() {
+	    return "println";
+	}
     }),
-    /*
+	/*
     STRUCT(new Function() {
         public int arity() {
+	    return 1;
         }
         public CronoType run(Visitor v, CronoType[] args) {
+	    
         }
         public String toString() {
         }
     }),
-    *//*
     SUBSTRUCT(new Function() {
         public int arity() {
         }
@@ -611,25 +620,43 @@ public enum CronoFunction {
         public String toString() {
         }
     }),
-    *//*
     NEWSTRUCT(new Function() {
+	public static final String _bad_type =
+	    "NEWSTRUCT: expected types :symbol :cons, got %s %s";
         public int arity() {
+	    return 2;
         }
         public CronoType run(Visitor v, CronoType[] args) {
+	    if(!(args[0] instanceof Symbol && args[1] instanceof Cons)) {
+		throw new InterpreterException(_bad_type, args[0].typeId(),
+					       args[1].typeId());
+	    }
+	    
+	    
         }
         public String toString() {
         }
     }),
-    *//*
-    EVAL(new Function() {
-        public int arity() {
-        }
+	*/
+    EVAL(new Function(new TypeId[]{CronoString.TYPEID}, Cons.TYPEID, 1)
+    {
         public CronoType run(Visitor v, CronoType[] args) {
+	    StringReader reader;
+	    reader = new StringReader(((CronoString)args[0]).image());
+	    
+	    Parser p = new Parser(reader);
+	    
+	    try {
+		return p.program().accept(v);
+	    }catch(ParseException pe) {
+		throw new InterpreterException("EVAL: parse error\n%s",
+					       pe.getMessage());
+	    }
         }
         public String toString() {
+	    return "eval";
         }
     }),
-    */
     ;
     
     public final Function function;
