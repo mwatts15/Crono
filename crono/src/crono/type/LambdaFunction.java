@@ -12,6 +12,11 @@ public class LambdaFunction extends Function {
     public final Environment environment; /*< for scoping */
     
     public LambdaFunction(Symbol[] args, CronoType body, Environment env) {
+	super(new TypeId[args.length], CronoType.TYPEID, args.length);
+	
+	for(int i = 0; i < args.length; ++i) {
+	    this.args[i] = CronoType.TYPEID;
+	}
 	this.arglist = args;
 	this.body = body;
 	this.environment = new Environment(env);

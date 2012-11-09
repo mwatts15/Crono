@@ -1,6 +1,7 @@
 package crono;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -20,6 +21,8 @@ public class Interpreter extends Visitor {
     private static final String _too_many_args =
 	"Too many arguments to %s: %d/%d recieved";
     private static final String _type_scope_err = "No type %s in scope";
+    private static final String _type_mismatch =
+	"Function '%s' expected arguments %s; got %s";
     
     public boolean show_env;
     public boolean show_closure;
@@ -66,13 +69,15 @@ public class Interpreter extends Visitor {
 	
 	CronoType value = iter.next().accept(this);
 	if(value instanceof Function) {
+	    Function fun = ((Function)value);
+	    
 	    Function.EvalType reserve = eval;
 	    /* Set the eval type to the current function's type; this keeps
 	     * type errors in builtins from happening, ex:
 	     * (+ arg1 arg2) under partial evaluation would fail since +
 	     * expects two numbers.
 	     */
-	    eval = ((Function)value).eval();
+	    eval = fun.eval;
 	    if(eval.level > reserve.level) {
 		eval = reserve;
 	    }
@@ -83,17 +88,17 @@ public class Interpreter extends Visitor {
 	    eval = reserve;
 	    
 	    int arglen = args.size();
-	    int nargs = ((Function)value).arity();
+	    int nargs = fun.arity;
 	    if(arglen < nargs) {
 		if(arglen == 0) {
 		    /* Special case -- we don't have to do anything to the
 		     * function to return it properly. */
-		    return value;
+		    return fun;
 		}
 		
 		/* Curry it */
-		if(value instanceof LambdaFunction) {
-		    LambdaFunction lfun = ((LambdaFunction)value);
+		if(fun instanceof LambdaFunction) {
+		    LambdaFunction lfun = ((LambdaFunction)fun);
 		    Environment env = env_stack.peek();
 		    if(!dynamic) {
 			/* Use the lambda's stored environment */
@@ -130,7 +135,7 @@ public class Interpreter extends Visitor {
 		/* Builtin partial evaluation */
 		
 		List<CronoType> body = new LinkedList<CronoType>();
-		body.add(value);
+		body.add(fun);
 		
 		body.addAll(args); /*< Dump args in order into the new cons */
 		
@@ -138,7 +143,7 @@ public class Interpreter extends Visitor {
 		List<Symbol> arglist = new ArrayList<Symbol>();
 		Symbol sym;
 		for(int i = arglen, n = 0; i < nargs; ++i, ++n) {
-		    sym = new Symbol(String.format("__interp_%d", n));
+		    sym = new Symbol(String.format("_i?%d!_", n));
 		    body.add(sym);
 		    arglist.add(sym);
 		}
@@ -149,24 +154,33 @@ public class Interpreter extends Visitor {
 					  Cons.fromList(body),
 					  env_stack.peek());
 	    }
-	    if(arglen > nargs && !((Function)value).variadic()) {
-		throw new RuntimeException(String.format(_too_many_args, value,
+	    if(arglen > nargs && !fun.variadic) {
+		throw new RuntimeException(String.format(_too_many_args, fun,
 							 arglen, nargs));
 	    }
 	    
 	    /* Full evaluation */
-	    if(value instanceof LambdaFunction && dynamic) {
+	    if(fun instanceof LambdaFunction && dynamic) {
 		/* We have to trick the lambda function if we want dynamic
 		 * scoping. I hate making so many objects left and right, but
 		 * this is the easiest way to do what I want here. */
-		LambdaFunction lfun = ((LambdaFunction)value);
+		LambdaFunction lfun = ((LambdaFunction)fun);
 		lfun = new LambdaFunction(lfun.arglist, lfun.body,
 					  env_stack.peek());
 		CronoType[] argarray = new CronoType[args.size()];
 		return lfun.run(this, args.toArray(argarray));
 	    }
-	    CronoType[] argarray = new CronoType[args.size()];
 	    if(eval == Function.EvalType.FULL) {
+		CronoType[] argarray = new CronoType[args.size()];
+		argarray = args.toArray(argarray);
+		for(int i = 0; i < argarray.length; ++i) {
+		    if(!(fun.args[i].isType(argarray[i]))) {
+			String argstr = Arrays.toString(argarray);
+			String expected = Arrays.toString(fun.args);
+			throw new InterpreterException(_type_mismatch, fun,
+						       expected, argstr);
+		    }
+		}
 		return ((Function)value).run(this, args.toArray(argarray));
 	    }else {
 		args.add(0, value);
