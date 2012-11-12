@@ -545,28 +545,59 @@ public enum CronoFunction {
 	private static final String _bad_parse =
 	    "LOAD: error parsing file:\n%s";
 	
-        public CronoType run(Visitor v, CronoType[] args) {
-	    if(!(args[0] instanceof CronoString)) {
-		throw new InterpreterException(_bad_type, args[0].typeId());
-	    }
-	    InputStream is;
+	private CronoType loadLisp(Visitor v, String fname) {
+	    InputStream is = null;
 	    try {
-		is = new FileInputStream(((CronoString)args[0]).image());
+		is = new FileInputStream(fname);
 	    }catch(FileNotFoundException fnfe) {
 		throw new InterpreterException(_file_not_found,
 					       fnfe.getMessage());
 	    }
-	    
 	    Parser p = new Parser(is);
-	    CronoType program;
+	    CronoType program = null;
 	    try {
-		program = p.program(); /*< Fetch entire program */
+		program = p.program();
 	    }catch(ParseException pe) {
 		throw new InterpreterException(_bad_parse, pe.getMessage());
 	    }
-	    
-	    System.err.printf("LOAD: interpreting file %s\n", args[0]);
 	    return program.accept(v);
+	}
+	private CronoType loadPackage(Visitor v, String fname) {
+	    CronoPackage pack = CronoPackage.load(fname);
+	    Environment env = v.getEnv();
+	    Function[] funcs = pack.functions();
+	    if(funcs != null) {
+		for(Function f : funcs) {
+		    env.put(new Symbol(f.toString()), f);
+		}
+	    }
+	    TypeId[] types = pack.types();
+	    if(types != null) {
+		for(TypeId t : types) {
+		    env.put(t);
+		}
+	    }
+	    
+	    CronoPackage.SymbolPair[] syms = pack.symbols();
+	    if(syms != null) {
+		for(CronoPackage.SymbolPair s : syms) {
+		    env.put(s.sym, s.type);
+		}
+	    }
+	    
+	    return TruthValue.T;
+	}
+	
+        public CronoType run(Visitor v, CronoType[] args) {
+	    if(!(args[0] instanceof CronoString)) {
+		throw new InterpreterException(_bad_type, args[0].typeId());
+	    }
+	    String fname = ((CronoString)args[0]).image();
+	    String lname = fname.toLowerCase();
+	    if(lname.endsWith(".lisp") || lname.endsWith(".crono")) {
+		return loadLisp(v, fname);
+	    }
+	    return loadPackage(v, fname);
         }
         public String toString() {
 	    return "load";
