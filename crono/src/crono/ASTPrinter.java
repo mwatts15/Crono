@@ -4,6 +4,7 @@ import crono.type.Atom;
 import crono.type.Cons;
 import crono.type.CronoType;
 import crono.type.Nil;
+import crono.type.Quote;
 
 public class ASTPrinter extends Visitor {
     private int ident_level;
@@ -32,6 +33,11 @@ public class ASTPrinter extends Visitor {
     
     public CronoType visit(Atom a) {
 	System.out.printf("%sSaw ATOM: %s\n", ident.toString(), a.toString());
+	return Nil.NIL;
+    }
+    
+    public CronoType visit(Quote q) {
+	System.out.printf("%sSaw QUOTE: %s\n", ident.toString(), q.toString());
 	return Nil.NIL;
     }
 }

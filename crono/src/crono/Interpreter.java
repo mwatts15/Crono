@@ -13,7 +13,9 @@ import crono.type.CronoType;
 import crono.type.Function;
 import crono.type.LambdaFunction;
 import crono.type.Nil;
+import crono.type.Quote;
 import crono.type.Symbol;
+import crono.type.CronoTypeId;
 import crono.type.TypeId;
 
 public class Interpreter extends Visitor {
@@ -52,10 +54,6 @@ public class Interpreter extends Visitor {
     }
     
     public CronoType visit(Cons c) {
-	if(c.isQuoted()) {
-	    c.quote(false);
-	    return c;
-	}
 	if(eval == Function.EvalType.NONE) {
 	    return c;
 	}
@@ -170,9 +168,13 @@ public class Interpreter extends Visitor {
 	    if(eval == Function.EvalType.FULL) {
 		CronoType[] argarray = new CronoType[args.size()];
 		argarray = args.toArray(argarray);
+		TypeId[] types = new TypeId[args.size()];
+		for(int i = 0; i < types.length; ++i) {
+		    types[i] = argarray[i].typeId();
+		}
 		for(int i = 0; i < argarray.length; ++i) {
 		    if(!(fun.args[i].isType(argarray[i]))) {
-			String argstr = Arrays.toString(argarray);
+			String argstr = Arrays.toString(types);
 			String expected = Arrays.toString(fun.args);
 			throw new InterpreterException(_type_mismatch, fun,
 						       expected, argstr);
@@ -195,10 +197,6 @@ public class Interpreter extends Visitor {
     }
     
     public CronoType visit(Atom a) {
-	if(a.isQuoted()) {
-	    a.quote(false);
-	    return a;
-	}
 	if(eval == Function.EvalType.NONE) {
 	    return a;
 	}
@@ -216,9 +214,9 @@ public class Interpreter extends Visitor {
 	}
 	/* Not else-if, so that we perform a double-resolution on a symbol that
 	 * represents a TypeId */
-	if(t instanceof TypeId) {
+	if(t instanceof CronoTypeId) {
 	    CronoType res = t; /*< Save symbol resolution in new CronoType */
-	    t = getEnv().getType((TypeId)t);
+	    t = getEnv().getType((CronoTypeId)t);
 	    if(t == null) {
 		if(eval == Function.EvalType.FULL) {
 		    throw new InterpreterException(_type_scope_err, a);
@@ -227,5 +225,9 @@ public class Interpreter extends Visitor {
 	    }
 	}
 	return t;
+    }
+    
+    public CronoType visit(Quote q) {
+	return q.node;
     }
 }

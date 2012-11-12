@@ -14,9 +14,6 @@ public class Symbol extends Atom {
 	return Symbol.TYPEID;
     }
     public String toString() {
-	if(isQuoted()) {
-	    return "'" + this.name;
-	}
 	return this.name;
     }
     
