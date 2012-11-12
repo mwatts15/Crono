@@ -1,12 +1,8 @@
 package crono.type;
 
-public class TypeId extends Atom {
-    public static final TypeId TYPEID = new TypeId(":type-id", TypeId.class,
-						   Atom.TYPEID);
-    
+public class TypeId {
     public final String image;
     public final Class type;
-    
     public final TypeId parent;
     
     public TypeId(String image, Class type) {
@@ -25,23 +21,17 @@ public class TypeId extends Atom {
 		return true;
 	    }
 	    id = id.parent;
+
 	}
 	return false;
     }
-    
+   
     public boolean equals(Object o) {
 	return ((o instanceof TypeId) &&
-		type.equals(((TypeId)o).type) &&
 		image.equals(((TypeId)o).image));
     }
     
-    public TypeId typeId() {
-	return TypeId.TYPEID;
-    }
     public String toString() {
-	if(isQuoted()) {
-	    return "'" + image;
-	}
 	return image;
     }
 }

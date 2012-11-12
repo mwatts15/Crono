@@ -3,7 +3,9 @@ package crono.type;
 import crono.InterpreterException;
 
 public class CronoVector extends CronoArray {
-    public static final TypeId TYPEID = new TypeId(":array", CronoArray.class);
+    public static final TypeId TYPEID = new TypeId(":vector",
+						   CronoVector.class,
+						   CronoArray.TYPEID);
     private static final String _rank_dim_mismatch =
 	"Wrong number of dimensions to Array of rank %d: %d";
     private static final String _data_size_mismatch =

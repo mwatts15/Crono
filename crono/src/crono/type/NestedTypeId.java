@@ -3,12 +3,7 @@ package crono.type;
 import java.util.Arrays;
 
 public class NestedTypeId extends TypeId {
-    public static final TypeId TYPEID = new TypeId(":nested-type-id",
-						   NestedTypeId.class,
-						   TypeId.TYPEID);
-    
-    public TypeId[] inner;
-    
+    public final TypeId[] inner;
     public NestedTypeId(String name, Class type, TypeId[] inner) {
 	this(name, type, inner, null);
     }
