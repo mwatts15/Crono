@@ -1,8 +1,11 @@
 package crono;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -90,6 +93,13 @@ public class Crono {
 	Parser parser = null;
 	if(print_ast) {
 	    v = new ASTPrinter();
+	}
+	
+	try {
+	    File package_dir = new File("./packages/");
+	    CronoPackage.initLoader(new URL[]{package_dir.toURI().toURL()});
+	}catch(MalformedURLException murle) {
+	    System.err.printf("Crono: Could not open package directory!\n");
 	}
 	
 	if(interactive && files.size() == 0) {
