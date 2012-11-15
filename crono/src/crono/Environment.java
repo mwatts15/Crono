@@ -1,7 +1,10 @@
 package crono;
 
+import crono.type.CronoStruct;
 import crono.type.CronoType;
+import crono.type.CronoTypeId;
 import crono.type.Symbol;
+import crono.type.TypeId;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,6 +14,7 @@ public class Environment {
     public boolean show_builtins, multiline, show_types;
 
     private Map<String, CronoType> symbols;
+    private Map<String, CronoTypeId> types;
     private String display_string;
     private boolean update_display_string;
 
@@ -62,6 +66,12 @@ public class Environment {
         return symbols.entrySet().iterator();
     }
 
+    public CronoTypeId getType(CronoTypeId id) {
+        return getType(id.type.image);
+    }
+    public CronoTypeId getType(String str) {
+        return types.get(str);
+    }
     public String toString() {
         if(update_display_string) {
             StringBuilder result = new StringBuilder();

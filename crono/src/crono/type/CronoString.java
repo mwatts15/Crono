@@ -1,14 +1,23 @@
 package crono.type;
 
+import crono.InterpreterException;
+import crono.Visitor;
+
 public class CronoString extends CronoArray {
     public static final TypeId TYPEID = new TypeId(":string",
 						   CronoString.class,
 						   CronoArray.TYPEID);
+    private static final String _index_oob =
+	"String index out of bounds: %d > %d";
+    private static final String _rank_mismatch =
+	"String rank mismatch: %d != %d";
     
     protected StringBuilder data;
     protected int size;
     
     public CronoString(String str) {
+	super(CronoCharacter.TYPEID);
+	
 	int size = str.length() - 2;
 	data = new StringBuilder(size);
 	
@@ -34,6 +43,8 @@ public class CronoString extends CronoArray {
     }
     
     public CronoString(int size) {
+	super(CronoCharacter.TYPEID);
+	
 	data = new StringBuilder(size);
 	this.size = size;
     }
@@ -43,20 +54,26 @@ public class CronoString extends CronoArray {
     }
     public int dim(int n) {
 	if(n != 1) {
-	    throw new RuntimeException("Array index out of bounds");
+	    throw new InterpreterException(_rank_mismatch, n, 1);
 	}
 	return size;
     }
-    public CronoType get(int[] n) {
-	if(n.length != 1) {
-	    throw new RuntimeException("Invalid number of indicies to get");
+    
+    private int offset(int[] n) {
+	if(n.length > 1) {
+	    throw new InterpreterException(_rank_mismatch, n.length, 1);
 	}
-	
 	if(n[0] >= size) {
-	    throw new RuntimeException("Array index out of bounds");
+	    throw new InterpreterException(_index_oob, n[0], size);
 	}
-	
-	return new CronoCharacter(data.charAt(n[0]));
+	return n[0];
+    }
+    public CronoType get(int[] n) {
+	return new CronoCharacter(data.charAt(offset(n)));
+    }
+    public CronoType put(int[] n, CronoType item) {
+	data.setCharAt(offset(n), ((CronoCharacter)item).ch);
+	return item;
     }
     
     public String image() {

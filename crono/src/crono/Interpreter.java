@@ -13,7 +13,9 @@ import crono.type.CronoType;
 import crono.type.Function;
 import crono.type.LambdaFunction;
 import crono.type.Nil;
+import crono.type.Quote;
 import crono.type.Symbol;
+import crono.type.CronoTypeId;
 import crono.type.TypeId;
 
 public class Interpreter extends Visitor {
@@ -51,17 +53,15 @@ public class Interpreter extends Visitor {
         env_stack = new Stack<Environment>();
         reset(); /*< Set up initial environment and types */
     }
-    public void reset() {
+    public void reset()
+    {
         env_stack.clear();
         env_stack.push(new Environment());
         types = new Types();
     }
 
-    public CronoType visit(Cons c) {
-        if(c.isQuoted()) {
-            c.quote(false);
-            return c;
-        }
+    public CronoType visit(Cons c)
+    {
         if(eval == Function.EvalType.NONE) {
             return c;
         }
@@ -84,134 +84,135 @@ public class Interpreter extends Visitor {
             eval = fun.eval;
             if(eval.level > saved_eval_level.level) {
                 eval = saved_eval_level;
-            eval = ((Function)value).eval();
-            if(eval.level > reserve.level) {
-                eval = reserve;
-            }
-            List<CronoType> args = new ArrayList<CronoType>();
-            while(iter.hasNext()) {
-                args.add(iter.next().accept(this));
-            }
-            eval = saved_eval_level;
 
-            int arglen = args.size();
-            int nargs = fun.arity;
-            if(arglen < nargs) {
-                if(arglen == 0) {
-                    /* Special case -- we don't have to do anything to the
-                     * function to return it properly. */
-                    return fun;
+                List<CronoType> args = new ArrayList<CronoType>();
+
+                while (iter.hasNext())
+                {
+                    args.add(iter.next().accept(this));
                 }
 
-                /* Curry it */
-                if(fun instanceof LambdaFunction) {
+                int arglen = args.size();
+                int nargs = fun.arity;
+                if(arglen < nargs) {
+                    if(arglen == 0) {
+                        /* Special case -- we don't have to do anything to the
+                         * function to return it properly. */
+                        return fun;
+                    }
+
+                    /* Curry it */
+                    if(fun instanceof LambdaFunction)
+                    {
+                        LambdaFunction lfun = ((LambdaFunction)fun);
+                        Environment env = env_stack.peek();
+                        if(!dynamic) {
+                            /* Use the lambda's stored environment */
+                            env = lfun.environment;
+                        }
+                        /* We want to preserve the current environment */
+                        env = new Environment(env);
+
+                        /* Put known values into the new environment */
+                        for(int i = 0; i < arglen; ++i) {
+                            env.put(lfun.arglist[i], args.get(i));
+                        }
+
+                        /* Create new argument list and remove remaining args from
+                         * the new environment */
+                        List<Symbol> largs = new ArrayList<Symbol>();
+                        for (int i = arglen; i < lfun.arglist.length; ++i) {
+                            largs.add(lfun.arglist[i]);
+                            env.remove(lfun.arglist[i]);
+                        }
+
+                        /* Evaluate the body as much as possible */
+                        saved_eval_level = eval;
+
+                        eval = Function.EvalType.PARTIAL;
+                        env_stack.push(env);
+                        CronoType lbody = lfun.body.accept(this);
+                        env_stack.pop();
+                        eval = saved_eval_level;
+
+                        /* Return the new, partially evaluated lambda */
+                        Symbol[] arglist = new Symbol[largs.size()];
+                        return new LambdaFunction(largs.toArray(arglist),
+                                lbody, lfun.environment);
+                    }
+
+                    /* Builtin partial evaluation */
+                    List<CronoType> body = new LinkedList<CronoType>();
+                    body.add(fun);
+
+                    body.addAll(args); /*< Dump args in order into the new cons */
+
+                    /* Add symbols for missing args */
+                    List<Symbol> arglist = new ArrayList<Symbol>();
+                    Symbol sym;
+                    for(int i = arglen, n = 0; i < nargs; ++i, ++n) {
+                        sym = new Symbol(String.format("_i?%d!_", n));
+                        body.add(sym);
+                        arglist.add(sym);
+                    }
+
+                    /* Create a new lambda */
+                    Symbol[] narglist = new Symbol[arglist.size()];
+                    return new LambdaFunction(arglist.toArray(narglist),
+                            Cons.fromList(body),
+                            env_stack.peek());
+                }
+                if(arglen > nargs && !fun.variadic) {
+                    throw new RuntimeException(String.format(_too_many_args, fun,
+                                arglen, nargs));
+                }
+
+                /* Full evaluation */
+                if(fun instanceof LambdaFunction && dynamic) {
+                    /* We have to trick the lambda function if we want dynamic
+                     * scoping. I hate making so many objects left and right, but
+                     * this is the easiest way to do what I want here. */
                     LambdaFunction lfun = ((LambdaFunction)fun);
-                    Environment env = env_stack.peek();
-                    if(!dynamic) {
-                        /* Use the lambda's stored environment */
-                        env = lfun.environment;
-                    }
-                    /* We want to preserve the current environment */
-                    env = new Environment(env);
-
-                    /* Put known values into the new environment */
-                    for(int i = 0; i < arglen; ++i) {
-                        env.put(lfun.arglist[i], args.get(i));
-                    }
-
-                    /* Create new argument list and remove remaining args from
-                     * the new environment */
-                    List<Symbol> largs = new ArrayList<Symbol>();
-                    for (int i = arglen; i < lfun.arglist.length; ++i) {
-                        largs.add(lfun.arglist[i]);
-                        env.remove(lfun.arglist[i]);
-                    }
-
-                    /* Evaluate the body as much as possible */
-                    saved_eval_level = eval;
-
-                    eval = Function.EvalType.PARTIAL;
-                    env_stack.push(env);
-                    CronoType lbody = lfun.body.accept(this);
-                    env_stack.pop();
-                    eval = saved_eval_level;
-
-                    /* Return the new, partially evaluated lambda */
-                    Symbol[] arglist = new Symbol[largs.size()];
-                    return new LambdaFunction(largs.toArray(arglist),
-                            lbody, lfun.environment);
+                    lfun = new LambdaFunction(lfun.arglist, lfun.body,
+                            env_stack.peek());
+                    CronoType[] argarray = new CronoType[args.size()];
+                    return lfun.run(this, args.toArray(argarray));
                 }
-
-                /* Builtin partial evaluation */
-                List<CronoType> body = new LinkedList<CronoType>();
-                body.add(fun);
-
-                body.addAll(args); /*< Dump args in order into the new cons */
-
-                /* Add symbols for missing args */
-                List<Symbol> arglist = new ArrayList<Symbol>();
-                Symbol sym;
-                for(int i = arglen, n = 0; i < nargs; ++i, ++n) {
-                    sym = new Symbol(String.format("_i?%d!_", n));
-                    body.add(sym);
-                    arglist.add(sym);
-                }
-
-                /* Create a new lambda */
-                Symbol[] narglist = new Symbol[arglist.size()];
-                return new LambdaFunction(arglist.toArray(narglist),
-                        Cons.fromList(body),
-                        env_stack.peek());
-            }
-            if(arglen > nargs && !fun.variadic) {
-                throw new RuntimeException(String.format(_too_many_args, fun,
-                            arglen, nargs));
-            }
-
-            /* Full evaluation */
-            if(fun instanceof LambdaFunction && dynamic) {
-                /* We have to trick the lambda function if we want dynamic
-                 * scoping. I hate making so many objects left and right, but
-                 * this is the easiest way to do what I want here. */
-                LambdaFunction lfun = ((LambdaFunction)fun);
-                lfun = new LambdaFunction(lfun.arglist, lfun.body,
-                        env_stack.peek());
-                CronoType[] argarray = new CronoType[args.size()];
-                return lfun.run(this, args.toArray(argarray));
-            }
-            if(eval == Function.EvalType.FULL)
-            {
-                CronoType[] argarray = new CronoType[args.size()];
-                argarray = args.toArray(argarray);
-                for(int i = 0; i < argarray.length; ++i) {
-                    if(!(fun.args[i].isType(argarray[i]))) {
-                        String argstr = Arrays.toString(argarray);
-                        String expected = Arrays.toString(fun.args);
-                        throw new InterpreterException(_type_mismatch, fun,
-                                expected, argstr);
+                if(eval == Function.EvalType.FULL)
+                {
+                    CronoType[] argarray = new CronoType[args.size()];
+                    argarray = args.toArray(argarray);
+                    for(int i = 0; i < argarray.length; ++i) {
+                        if(!(fun.argument_types[i].isType(argarray[i]))) {
+                            String argstr = Arrays.toString(argarray);
+                            String expected = Arrays.toString(fun.argument_types);
+                            throw new InterpreterException(_type_mismatch, fun,
+                                    expected, argstr);
+                        }
                     }
+                    return ((Function)value).run(this, args.toArray(argarray));
+                }else {
+                    args.add(0, value);
+                    return Cons.fromList(args);
                 }
-                return ((Function)value).run(this, args.toArray(argarray));
-            }else {
-                args.add(0, value);
-                return Cons.fromList(args);
             }
+
+            /* The initial value is not a function */
+            List<CronoType> list = new LinkedList<CronoType>();
+            list.add(value);
+            while(iter.hasNext()) {
+                list.add(iter.next().accept(this));
+            }
+            return Cons.fromList(list);
         }
-
-        /* The initial value is not a function */
-        List<CronoType> list = new LinkedList<CronoType>();
-        list.add(value);
-        while(iter.hasNext()) {
-            list.add(iter.next().accept(this));
+        else
+        {
+            throw new InterpreterException("Expected function, got %s", value.typeId());
         }
-        return Cons.fromList(list);
     }
 
-    public CronoType visit(Atom a) {
-        if(a.isQuoted()) {
-            a.quote(false);
-            return a;
-        }
+    public CronoType visit(Atom a)
+    {
         if(eval == Function.EvalType.NONE) {
             return a;
         }
@@ -241,5 +242,10 @@ public class Interpreter extends Visitor {
             }
         }
         return t;
+    }
+
+    public CronoType visit(Quote q)
+    {
+        return q.node;
     }
 }

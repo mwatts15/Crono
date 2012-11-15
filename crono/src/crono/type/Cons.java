@@ -105,10 +105,6 @@ public class Cons extends CronoType implements Iterable<CronoType> {
     
     public String toString() {
 	StringBuilder builder = new StringBuilder();
-	if(isQuoted()) {
-	    builder.append('\'');
-	}
-	
 	builder.append("(");
 	
 	Cons next = this;

@@ -15,7 +15,7 @@ public class LambdaFunction extends Function {
         super(new TypeId[args.length], CronoType.TYPEID, args.length);
 
         for(int i = 0; i < args.length; ++i) {
-            this.args[i] = CronoType.TYPEID;
+            this.argument_types[i] = CronoType.TYPEID;
         }
         this.arglist = args;
         this.body = body;

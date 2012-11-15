@@ -18,12 +18,15 @@ import crono.type.CronoFloat;
 import crono.type.CronoInteger;
 import crono.type.CronoString;
 import crono.type.CronoType;
+import crono.type.CronoTypeId;
 import crono.type.Nil;
+import crono.type.Quote;
 import crono.type.Symbol;
 import crono.type.TruthValue;
+import crono.type.TypeId;
 
 public class Parser {
-  public static Types types = new Types();
+  public Environment env;
   
   public static boolean debug = false;
 }
@@ -91,7 +94,11 @@ Atom atom():
       if(debug) {
         System.out.println("Parser: Saw <TYPEID>");
       }
-      types.get(n.image);
+      CronoTypeId id = null;
+      if(env != null) {
+          id = env.getType(n.image);
+      }
+      return (id == null) ? new CronoTypeId(new TypeId(n.image, null)) : id;
     }
   | n = <SYMBOL> {
       if(debug) {
@@ -147,19 +154,16 @@ CronoType node():
 {
   Cons c;
   Atom a;
-  boolean quoted = false;
 }
 {
   (
       <QUOTE>
       (
           c = list() {
-            c.quote(true);
-            return c;
+            return new Quote(c);
 	  }
 	| a = atom() {
-            a.quote(true);
-	    return a;
+	    return new Quote(a);
           }
       )
     | (
