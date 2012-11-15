@@ -8,11 +8,11 @@ import crono.type.CronoType;
 
 public abstract class Visitor {
     protected Stack<Environment> env_stack;
-    
+
     public abstract CronoType visit(Atom atom);
     public abstract CronoType visit(Cons list);
     public abstract void reset();
-    
+
     public Environment getEnv() {
 	return env_stack.peek();
     }

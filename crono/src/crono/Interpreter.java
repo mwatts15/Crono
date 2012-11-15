@@ -22,7 +22,7 @@ public class Interpreter extends Visitor {
         "Too many arguments to %s: %d/%d recieved";
     private static final String _type_scope_err = "No type %s in scope";
     private static final String _type_mismatch =
-	"Function '%s' expected arguments %s; got %s";
+        "Function '%s' expected arguments %s; got %s";
 
     public boolean show_env;
     public boolean show_closure;
@@ -44,6 +44,10 @@ public class Interpreter extends Visitor {
         indent_level = 0;
         eval = Function.EvalType.FULL;
 
+        /* The stack takes care of the environment frame
+         * when we descend into a subexpression for evaluation
+         * i.e.: CronoType value = iter.next().accept(this);
+         */
         env_stack = new Stack<Environment>();
         reset(); /*< Set up initial environment and types */
     }
@@ -54,147 +58,149 @@ public class Interpreter extends Visitor {
     }
 
     public CronoType visit(Cons c) {
-	if(c.isQuoted()) {
-	    c.quote(false);
-	    return c;
-	}
-	if(eval == Function.EvalType.NONE) {
-	    return c;
-	}
+        if(c.isQuoted()) {
+            c.quote(false);
+            return c;
+        }
+        if(eval == Function.EvalType.NONE) {
+            return c;
+        }
 
-	Iterator<CronoType> iter = c.iterator();
-	if(!(iter.hasNext())) {
-	    return c; /*< C is an empty list (may be Nil or T) */
-	}
+        Iterator<CronoType> iter = c.iterator();
+        if(!(iter.hasNext())) {
+            return c; /*< C is an empty list (may be Nil or T) */
+        }
 
-	CronoType value = iter.next().accept(this);
-	if(value instanceof Function) {
-	    Function fun = ((Function)value);
+        CronoType value = iter.next().accept(this);
+        if(value instanceof Function) {
+            Function fun = ((Function)value);
 
-	    Function.EvalType reserve = eval;
-	    /* Set the eval type to the current function's type; this keeps
-	     * type errors in builtins from happening, ex:
-	     * (+ arg1 arg2) under partial evaluation would fail since +
-	     * expects two numbers.
-	     */
-	    eval = fun.eval;
-	    if(eval.level > reserve.level) {
-		eval = reserve;
-	    }
-	    List<CronoType> args = new ArrayList<CronoType>();
-	    while(iter.hasNext()) {
-		args.add(iter.next().accept(this));
-	    }
-	    eval = reserve;
+            Function.EvalType saved_eval_level = eval;
+            /* Set the eval type to the current function's type; this keeps
+             * type errors in builtins from happening, ex:
+             * (+ arg1 arg2) under partial evaluation would fail since +
+             * expects two numbers.
+             */
+            eval = fun.eval;
+            if(eval.level > saved_eval_level.level) {
+                eval = saved_eval_level;
+            }
+            List<CronoType> args = new ArrayList<CronoType>();
+            while(iter.hasNext()) {
+                args.add(iter.next().accept(this));
+            }
+            eval = saved_eval_level;
 
-	    int arglen = args.size();
-	    int nargs = fun.arity;
-	    if(arglen < nargs) {
-		if(arglen == 0) {
-		    /* Special case -- we don't have to do anything to the
-		     * function to return it properly. */
-		    return fun;
-		}
+            int arglen = args.size();
+            int nargs = fun.arity;
+            if(arglen < nargs) {
+                if(arglen == 0) {
+                    /* Special case -- we don't have to do anything to the
+                     * function to return it properly. */
+                    return fun;
+                }
 
-		/* Curry it */
-		if(fun instanceof LambdaFunction) {
-		    LambdaFunction lfun = ((LambdaFunction)fun);
-		    Environment env = env_stack.peek();
-		    if(!dynamic) {
-			/* Use the lambda's stored environment */
-			env = lfun.environment;
-		    }
-		    /* We want to preserve the current environment */
-		    env = new Environment(env);
+                /* Curry it */
+                if(fun instanceof LambdaFunction) {
+                    LambdaFunction lfun = ((LambdaFunction)fun);
+                    Environment env = env_stack.peek();
+                    if(!dynamic) {
+                        /* Use the lambda's stored environment */
+                        env = lfun.environment;
+                    }
+                    /* We want to psaved_eval_level the current environment */
+                    env = new Environment(env);
 
-		    /* Put known values into the new environment */
-		    for(int i = 0; i < arglen; ++i) {
-			env.put(lfun.arglist[i], args.get(i));
-		    }
-		    /* Create new argument list and remove remaining args from
-		     * the new environment */
-		    List<Symbol> largs = new ArrayList<Symbol>();
-		    for(int i = arglen; i < lfun.arglist.length; ++i) {
-			largs.add(lfun.arglist[i]);
-			env.remove(lfun.arglist[i]);
-		    }
+                    /* Put known values into the new environment */
+                    for(int i = 0; i < arglen; ++i) {
+                        env.put(lfun.arglist[i], args.get(i));
+                    }
 
-		    /* Evaluate the body as much as possible */
-		    reserve = eval;
-		    eval = Function.EvalType.PARTIAL;
-		    env_stack.push(env);
-		    CronoType lbody = lfun.body.accept(this);
-		    env_stack.pop();
-		    eval = reserve;
+                    /* Create new argument list and remove remaining args from
+                     * the new environment */
+                    List<Symbol> largs = new ArrayList<Symbol>();
+                    for (int i = arglen; i < lfun.arglist.length; ++i) {
+                        largs.add(lfun.arglist[i]);
+                        env.remove(lfun.arglist[i]);
+                    }
 
-		    /* Return the new, partially evaluated lambda */
-		    Symbol[] arglist = new Symbol[largs.size()];
-		    return new LambdaFunction(largs.toArray(arglist),
-					      lbody, lfun.environment);
-		}
-		/* Builtin partial evaluation */
+                    /* Evaluate the body as much as possible */
+                    saved_eval_level = eval;
 
-		List<CronoType> body = new LinkedList<CronoType>();
-		body.add(fun);
+                    eval = Function.EvalType.PARTIAL;
+                    env_stack.push(env);
+                    CronoType lbody = lfun.body.accept(this);
+                    env_stack.pop();
+                    eval = saved_eval_level;
 
-		body.addAll(args); /*< Dump args in order into the new cons */
+                    /* Return the new, partially evaluated lambda */
+                    Symbol[] arglist = new Symbol[largs.size()];
+                    return new LambdaFunction(largs.toArray(arglist),
+                            lbody, lfun.environment);
+                }
+                /* Builtin partial evaluation */
 
-		/* Add symbols for missing args */
-		List<Symbol> arglist = new ArrayList<Symbol>();
-		Symbol sym;
-		for(int i = arglen, n = 0; i < nargs; ++i, ++n) {
-		    sym = new Symbol(String.format("_i?%d!_", n));
-		    body.add(sym);
-		    arglist.add(sym);
-		}
+                List<CronoType> body = new LinkedList<CronoType>();
+                body.add(fun);
 
-		/* Create a new lambda */
-		Symbol[] narglist = new Symbol[arglist.size()];
-		return new LambdaFunction(arglist.toArray(narglist),
-					  Cons.fromList(body),
-					  env_stack.peek());
-	    }
-	    if(arglen > nargs && !fun.variadic) {
-		throw new RuntimeException(String.format(_too_many_args, fun,
-							 arglen, nargs));
-	    }
+                body.addAll(args); /*< Dump args in order into the new cons */
 
-	    /* Full evaluation */
-	    if(fun instanceof LambdaFunction && dynamic) {
-		/* We have to trick the lambda function if we want dynamic
-		 * scoping. I hate making so many objects left and right, but
-		 * this is the easiest way to do what I want here. */
-		LambdaFunction lfun = ((LambdaFunction)fun);
-		lfun = new LambdaFunction(lfun.arglist, lfun.body,
-					  env_stack.peek());
-		CronoType[] argarray = new CronoType[args.size()];
-		return lfun.run(this, args.toArray(argarray));
-	    }
-	    if(eval == Function.EvalType.FULL) {
-		CronoType[] argarray = new CronoType[args.size()];
-		argarray = args.toArray(argarray);
-		for(int i = 0; i < argarray.length; ++i) {
-		    if(!(fun.args[i].isType(argarray[i]))) {
-			String argstr = Arrays.toString(argarray);
-			String expected = Arrays.toString(fun.args);
-			throw new InterpreterException(_type_mismatch, fun,
-						       expected, argstr);
-		    }
-		}
-		return ((Function)value).run(this, args.toArray(argarray));
-	    }else {
-		args.add(0, value);
-		return Cons.fromList(args);
-	    }
-	}
+                /* Add symbols for missing args */
+                List<Symbol> arglist = new ArrayList<Symbol>();
+                Symbol sym;
+                for(int i = arglen, n = 0; i < nargs; ++i, ++n) {
+                    sym = new Symbol(String.format("_i?%d!_", n));
+                    body.add(sym);
+                    arglist.add(sym);
+                }
 
-	/* The initial value is not a function */
-	List<CronoType> list = new LinkedList<CronoType>();
-	list.add(value);
-	while(iter.hasNext()) {
-	    list.add(iter.next().accept(this));
-	}
-	return Cons.fromList(list);
+                /* Create a new lambda */
+                Symbol[] narglist = new Symbol[arglist.size()];
+                return new LambdaFunction(arglist.toArray(narglist),
+                        Cons.fromList(body),
+                        env_stack.peek());
+            }
+            if(arglen > nargs && !fun.variadic) {
+                throw new RuntimeException(String.format(_too_many_args, fun,
+                            arglen, nargs));
+            }
+
+            /* Full evaluation */
+            if(fun instanceof LambdaFunction && dynamic) {
+                /* We have to trick the lambda function if we want dynamic
+                 * scoping. I hate making so many objects left and right, but
+                 * this is the easiest way to do what I want here. */
+                LambdaFunction lfun = ((LambdaFunction)fun);
+                lfun = new LambdaFunction(lfun.arglist, lfun.body,
+                        env_stack.peek());
+                CronoType[] argarray = new CronoType[args.size()];
+                return lfun.run(this, args.toArray(argarray));
+            }
+            if(eval == Function.EvalType.FULL) {
+                CronoType[] argarray = new CronoType[args.size()];
+                argarray = args.toArray(argarray);
+                for(int i = 0; i < argarray.length; ++i) {
+                    if(!(fun.args[i].isType(argarray[i]))) {
+                        String argstr = Arrays.toString(argarray);
+                        String expected = Arrays.toString(fun.args);
+                        throw new InterpreterException(_type_mismatch, fun,
+                                expected, argstr);
+                    }
+                }
+                return ((Function)value).run(this, args.toArray(argarray));
+            }else {
+                args.add(0, value);
+                return Cons.fromList(args);
+            }
+        }
+
+        /* The initial value is not a function */
+        List<CronoType> list = new LinkedList<CronoType>();
+        list.add(value);
+        while(iter.hasNext()) {
+            list.add(iter.next().accept(this));
+        }
+        return Cons.fromList(list);
     }
 
     public CronoType visit(Atom a) {
