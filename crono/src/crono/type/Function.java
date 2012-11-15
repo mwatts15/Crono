@@ -4,7 +4,7 @@ import crono.Visitor;
 
 public abstract class Function extends Atom {
     public static final TypeId TYPEID = new TypeId(":function", Function.class,
-						   Atom.TYPEID);
+            Atom.TYPEID);
 
     public enum EvalType {
         FULL("full", 2),
@@ -23,37 +23,40 @@ public abstract class Function extends Atom {
         }
     }
 
-    public final TypeId[] args;
+    /* Argument types */
+    public final TypeId[] argument_types;
     public final TypeId returntype;
     public final boolean variadic;
     public final EvalType eval;
     public final int arity;
 
     protected Function() {
-	this(null, null, 0, false, EvalType.FULL);
+        this(null, null, 0, false, EvalType.FULL);
     }
-    public Function(TypeId[] args, TypeId ret, int arity) {
-	this(args, ret, arity, false, EvalType.FULL);
+    public Function(TypeId[] argument_types, TypeId ret, int arity) {
+        this(argument_types, ret, arity, false, EvalType.FULL);
     }
-    public Function(TypeId[] args, TypeId ret, int arity, boolean variadic) {
-	this(args, ret, arity, variadic, EvalType.FULL);
-    }
-    public Function(TypeId[] args, TypeId ret, int arity, EvalType eval) {
-	this(args, ret, arity, false, eval);
-    }
-    public Function(TypeId[] args, TypeId ret, int arity, boolean variadic,
-		    EvalType eval)
+    public Function(TypeId[] argument_types, TypeId ret, int arity, boolean variadic)
     {
-	this.args = args;
-	this.returntype = ret;
-	this.arity = arity;
-	this.variadic = variadic;
-	this.eval = eval;
+        this(argument_types, ret, arity, variadic, EvalType.FULL);
     }
 
-    public abstract CronoType run(Visitor v, CronoType[] args);
+    public Function(TypeId[] argument_types, TypeId ret, int arity, EvalType eval) {
+        this(argument_types, ret, arity, false, eval);
+    }
+    public Function(TypeId[] argument_types, TypeId ret, int arity, boolean variadic,
+            EvalType eval)
+    {
+        this.argument_types = argument_types;
+        this.returntype = ret;
+        this.arity = arity;
+        this.variadic = variadic;
+        this.eval = eval;
+    }
+
+    public abstract CronoType run(Visitor v, CronoType[] argument_types);
 
     public TypeId typeId() {
-	return Function.TYPEID;
+        return Function.TYPEID;
     }
 }

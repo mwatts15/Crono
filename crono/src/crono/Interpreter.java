@@ -84,6 +84,9 @@ public class Interpreter extends Visitor {
             eval = fun.eval;
             if(eval.level > saved_eval_level.level) {
                 eval = saved_eval_level;
+            eval = ((Function)value).eval();
+            if(eval.level > reserve.level) {
+                eval = reserve;
             }
             List<CronoType> args = new ArrayList<CronoType>();
             while(iter.hasNext()) {
@@ -108,7 +111,7 @@ public class Interpreter extends Visitor {
                         /* Use the lambda's stored environment */
                         env = lfun.environment;
                     }
-                    /* We want to psaved_eval_level the current environment */
+                    /* We want to preserve the current environment */
                     env = new Environment(env);
 
                     /* Put known values into the new environment */
@@ -138,8 +141,8 @@ public class Interpreter extends Visitor {
                     return new LambdaFunction(largs.toArray(arglist),
                             lbody, lfun.environment);
                 }
-                /* Builtin partial evaluation */
 
+                /* Builtin partial evaluation */
                 List<CronoType> body = new LinkedList<CronoType>();
                 body.add(fun);
 
@@ -176,7 +179,8 @@ public class Interpreter extends Visitor {
                 CronoType[] argarray = new CronoType[args.size()];
                 return lfun.run(this, args.toArray(argarray));
             }
-            if(eval == Function.EvalType.FULL) {
+            if(eval == Function.EvalType.FULL)
+            {
                 CronoType[] argarray = new CronoType[args.size()];
                 argarray = args.toArray(argarray);
                 for(int i = 0; i < argarray.length; ++i) {
