@@ -23,7 +23,7 @@ public class Crono {
     public static final String introstr =
 	"Crono++ by Mark Watts, Carlo Vidal, Troy Varney (c) 2012\n";
     public static final String prompt = "> ";
-    
+
     private static CronoType getStatement(Parser p) {
 	/* This was supposed to loop the parser until it got a valid statement
 	 * or hit EOF, but I can't get it to work quite right */
@@ -35,10 +35,10 @@ public class Crono {
 	    System.err.println(pe);
 	    statement = null;
 	}
-	
+
 	return statement;
     }
-    
+
     public static void main(String[] args) {
 	OptionParser optparse = new OptionParser(args);
 	boolean print_ast = false;
@@ -46,7 +46,7 @@ public class Crono {
 	Visitor v = interp;
 	boolean interactive = (System.console() != null); /*< Java 6 feature */
 	List<String> files = new LinkedList<String>();
-	
+
 	int opt = optparse.getopt(options);
 	while(opt != -1) {
 	    System.err.printf("OptionParser: got %d(%c)\n", opt, (char)opt);
@@ -72,7 +72,7 @@ public class Crono {
 	    case 't':
 		interp.getEnv().show_types = true;
 		break;
-		
+
 	    case '?':
 	    default:
 		System.err.printf("Invalid option: %s\n",
@@ -82,22 +82,22 @@ public class Crono {
 	    }
 	    opt = optparse.getopt(options);
 	}
-	
+
 	for(int i = optparse.optind(); i < args.length; ++i) {
 	    files.add(args[i]);
 	}
-	
+
 	Parser parser = null;
 	if(print_ast) {
 	    v = new ASTPrinter();
 	}
-	
+    //v = new AST();
 	if(interactive && files.size() == 0) {
 	    parser = new Parser(new InputStreamReader(System.in));
 	    System.out.println(introstr);
-	    
+
 	    System.out.printf("Environment:\n%s\n", interp.env_stack.peek());
-	    
+
 	    boolean good = false;
 	    CronoType statement = getStatement(parser);
 	    while(statement != null) {
@@ -114,7 +114,7 @@ public class Crono {
 		}
 		statement = getStatement(parser);
 	    }
-	    
+
 	    System.out.println();
 	}else {
 	    for(String fname : files) {
@@ -125,7 +125,7 @@ public class Crono {
 				      fnfe.toString());
 		    continue;
 		}
-		
+
 		try {
 		    CronoType head = parser.program();
 		    head.accept(v);
@@ -133,7 +133,7 @@ public class Crono {
 		    System.err.printf("Error parsing crono file: %s\n  %s\n",
 				      fname, pe);
 		}
-		
+
 		v.reset(); /*< Reset the visitor for the next file */
 	    }
 	}

@@ -10,59 +10,59 @@ public class LambdaFunction extends Function {
     public final Symbol[] arglist;
     public final CronoType body; /*< AST head node */
     public final Environment environment; /*< for scoping */
-    
+
     public LambdaFunction(Symbol[] args, CronoType body, Environment env) {
-	super(new TypeId[args.length], CronoType.TYPEID, args.length);
-	
-	for(int i = 0; i < args.length; ++i) {
-	    this.args[i] = CronoType.TYPEID;
-	}
-	this.arglist = args;
-	this.body = body;
-	this.environment = new Environment(env);
+        super(new TypeId[args.length], CronoType.TYPEID, args.length);
+
+        for(int i = 0; i < args.length; ++i) {
+            this.args[i] = CronoType.TYPEID;
+        }
+        this.arglist = args;
+        this.body = body;
+        this.environment = new Environment(env);
     }
-    
+
     public LambdaFunction(LambdaFunction fun) {
-	this(fun.arglist, fun.body, fun.environment);
+        this(fun.arglist, fun.body, fun.environment);
     }
-    
+
     public int arity() {
-	return arglist.length;
+        return arglist.length;
     }
-    
+
     public boolean variadic() {
-	return false;
+        return false;
     }
-    
+
     public EvalType eval() {
-	return Function.EvalType.FULL;
+        return Function.EvalType.FULL;
     }
-    
+
     public CronoType run(Visitor v, CronoType[] args) {
-	Environment env = new Environment(environment);
-	for(int i = 0; i < args.length; ++i) {
-	    env.put(arglist[i], args[i]);
-	}
-	
-	v.pushEnv(env);
-	CronoType ret = body.accept(v);
-	v.popEnv();
-	
-	return ret;
+        Environment env = new Environment(environment);
+        for(int i = 0; i < args.length; ++i) {
+            env.put(arglist[i], args[i]);
+        }
+
+        v.pushEnv(env);
+        CronoType ret = body.accept(v);
+        v.popEnv();
+
+        return ret;
     }
-    
+
     public String toString() {
-	StringBuilder builder = new StringBuilder();
-	builder.append("(");
-	if(arglist.length > 0) {
-	    for(int i = 0; i < arglist.length - 1; ++i) {
-		builder.append(arglist[i]);
-		builder.append(" ");
-	    }
-	    builder.append(arglist[arglist.length - 1]);
-	}
-	builder.append(")");
-	
-	return String.format("(\\ %s %s)", builder.toString(), body);
+        StringBuilder builder = new StringBuilder();
+        builder.append("(");
+        if(arglist.length > 0) {
+            for(int i = 0; i < arglist.length - 1; ++i) {
+                builder.append(arglist[i]);
+                builder.append(" ");
+            }
+            builder.append(arglist[arglist.length - 1]);
+        }
+        builder.append(")");
+
+        return String.format("(\\ %s %s)", builder.toString(), body);
     }
 }
