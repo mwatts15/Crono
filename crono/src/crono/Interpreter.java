@@ -177,7 +177,7 @@ public class Interpreter extends Visitor {
 		for(int i = 0; i < types.length; ++i) {
 		    types[i] = argarray[i].typeId();
 		}
-		for(int i = 0; i < argarray.length; ++i) {
+		for(int i = 0; i < fun.args.length; ++i) {
 		    if(!(fun.args[i].isType(argarray[i]))) {
 			String argstr = Arrays.toString(types);
 			String expected = Arrays.toString(fun.args);
