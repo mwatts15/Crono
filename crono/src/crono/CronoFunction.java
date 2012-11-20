@@ -72,13 +72,26 @@ public enum CronoFunction {
 	    return "cdr";
 	}
     }),
+    LIST(new Function(new TypeId[]{CronoType.TYPEID}, Cons.TYPEID, 1, true)
+    {
+	public CronoType run(Visitor v, CronoType[] args) {
+	    Cons c = Nil.NIL;
+	    for(int i = 0; i < args.length; ++i) {
+		c = new Cons(args[i], c);
+	    }
+	    return c;
+	}
+	public String toString() {
+	    return "list";
+	}
+    }),
     DEFINE(new Function(new TypeId[]{Symbol.TYPEID, CronoType.TYPEID},
 			CronoType.TYPEID, 2, EvalType.NONE)
     {
 	private static final String _bad_type =
 	    "DEFINE: expected :symbol, got %s";
 	
-	public CronoType run(Visitor v, CronoType[]args) {
+	public CronoType run(Visitor v, CronoType[] args) {
 	    if(!(args[0] instanceof Symbol)) {
 		throw new InterpreterException(_bad_type, args[0].typeId());
 	    }
