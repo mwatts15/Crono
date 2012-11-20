@@ -1,6 +1,8 @@
 package crono.type;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import crono.InterpreterException;
@@ -24,7 +26,7 @@ public class CronoStruct extends Function {
 	"Field %s expects %s, got %s";
     private static final TypeId[] _args = {Symbol.TYPEID, CronoType.TYPEID};
     
-    public class Field {
+    public static class Field {
 	public final Symbol sym;
 	public final TypeId type;
 	private CronoType data;
@@ -47,56 +49,125 @@ public class CronoStruct extends Function {
 	}
     }
     
+    private static final String _malformed_field =
+	"%s: malformed field default %s; expected (:symbol <:type> <:any>)";
+    public static Map<String, Field> BuildFieldMap(String name, Cons list) {
+	Map<String, Field> fields = new HashMap<String, Field>();
+	Iterator<CronoType> iter;
+	String str;
+	Symbol sym;
+	CronoType element, data;
+	TypeId accept;
+	boolean el2isType;
+	for(CronoType ct: list) {
+	    if(!(ct instanceof Cons)) {
+		throw new InterpreterException(_malformed_field, name, ct);
+	    }
+	    
+	    accept = CronoType.TYPEID;
+	    data = Nil.NIL;
+	    iter = ((Cons)ct).iterator();
+	    str = null;
+	    sym = null;
+	    el2isType = false;
+	    if(iter.hasNext()) {
+		element = iter.next();
+		if(!(element instanceof Symbol)) {
+		    throw new InterpreterException(_malformed_field, name, ct);
+		}
+		sym = (Symbol)element;
+		str = sym.toString();
+	    }
+	    if(iter.hasNext()) {
+		element = iter.next();
+		if(element instanceof CronoTypeId) {
+		    accept = ((CronoTypeId)element).type;
+		    el2isType = true;
+		}else {
+		    data = element;
+		}
+	    }
+	    if(iter.hasNext()) {
+		element = iter.next();
+		if(element instanceof CronoTypeId) {
+		    if(el2isType) {
+			throw new InterpreterException(_malformed_field, name,
+						       ct);
+		    }
+		    accept = ((CronoTypeId)element).type;
+		}else if(!el2isType) {
+		    throw new InterpreterException(_malformed_field, name, ct);
+		}else {
+		    data = element;
+		}
+	    }
+	    if(iter.hasNext()) {
+		throw new InterpreterException(_malformed_field, name, ct);
+	    }
+	    fields.put(str, new CronoStruct.Field(sym, accept, data));
+	}
+	return fields;
+    }
+    
     public final String name;
     public final CronoStruct parent;
-    private Map<Symbol, Field> fields;
+    private Map<String, Field> fields;
     private TypeId type;
     
-    public CronoStruct(String name, Map<Symbol, Field> fields) {
+    public CronoStruct(String name, Map<String, Field> fields) {
 	this(name, fields, null);
     }
-    public CronoStruct(String name, Map<Symbol, Field> fields,
-		       CronoStruct parent)
+    public CronoStruct(String name, Map<String, Field> fields, CronoStruct p)
     {
 	super(_args, CronoType.TYPEID, 1, true, Function.EvalType.NONE);
 	this.name = name;
-	this.parent = parent;
-	this.fields = new HashMap<Symbol, Field>();
-	TypeId parid = TYPEID;
-	if(parent != null) {
-	    /* Since all structs do this we only need to add the parent's
-	     * fields */
+	this.parent = p;
+	this.fields = new HashMap<String, Field>();
+	TypeId id = TYPEID;
+	if(p != null) {
 	    fields.putAll(parent.fields);
-	    parid = parent.typeId();
+	    id = p.type;
 	}
-	fields.putAll(fields);
-	
-	this.type = new TypeId(":struct-"+name, CronoStruct.class, parid);
+	this.fields.putAll(fields);
+	this.type = new TypeId(":struct-"+name, CronoStruct.class, id);
+    }
+    protected CronoStruct(CronoStruct cs) {
+	super(_args, CronoType.TYPEID, 1, true, Function.EvalType.NONE);
+	this.name = cs.name;
+	this.parent = cs.parent;
+	this.fields = new HashMap<String, Field>();
+	this.fields.putAll(cs.fields);
+	this.type = cs.type;
     }
     
     public CronoType run(Visitor v, CronoType[] args) {
 	/* CronoStruct doesn't contain an AST, so we can ignore the visitor */
+	Field field;
 	switch(args.length) {
 	case 1:
 	    /* Being used as a get */
-	    CronoType val = fields.get((Symbol)args[0]).get();
-	    if(val == null) {
+	    field = fields.get(args[0].toString());
+	    if(field == null) {
 		throw new InterpreterException(_inv_field_name, name,
 					       args[0].toString());
 	    }
-	    return val;
+	    return field.get();
 	case 2:
 	    /* Being used as a set */
-	    Field field = fields.get((Symbol)args[0]);
+	    field = fields.get(args[0].toString());
 	    if(field == null) {
 		throw new InterpreterException(_inv_field_name, name,
 					       args[0].toString());
 	    }
 	    
-	    return field.put(args[1]);
+	    return field.put(args[1].accept(v));
 	default:
 	    throw new InterpreterException("Too many arguments to struct");
 	}
+    }
+    
+    public CronoStruct copy() {
+	return new CronoStruct(this);
     }
     
     public TypeId typeId() {

@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import crono.type.Cons;
 import crono.type.CronoCharacter;
@@ -14,6 +15,7 @@ import crono.type.CronoInteger;
 import crono.type.CronoNumber;
 import crono.type.CronoPrimitive;
 import crono.type.CronoString;
+import crono.type.CronoStruct;
 import crono.type.CronoType;
 import crono.type.Function;
 import crono.type.Function.EvalType;
@@ -632,43 +634,60 @@ public enum CronoFunction {
 	    return "println";
 	}
     }),
-	/*
-    STRUCT(new Function() {
-        public int arity() {
-	    return 1;
-        }
+    STRUCT(new Function(new TypeId[]{Symbol.TYPEID}, CronoStruct.TYPEID, 1,
+			false, EvalType.NONE)
+    {
+	private static final String _name = "struct";
+	private static final String _no_struct_in_scope =
+	    "struct: No structure definition for %s in scope";
         public CronoType run(Visitor v, CronoType[] args) {
-	    
-        }
-        public String toString() {
-        }
-    }),
-    SUBSTRUCT(new Function() {
-        public int arity() {
-        }
-        public CronoType run(Visitor v, CronoType[] args) {
-        }
-        public String toString() {
-        }
-    }),
-    NEWSTRUCT(new Function() {
-	public static final String _bad_type =
-	    "NEWSTRUCT: expected types :symbol :cons, got %s %s";
-        public int arity() {
-	    return 2;
-        }
-        public CronoType run(Visitor v, CronoType[] args) {
-	    if(!(args[0] instanceof Symbol && args[1] instanceof Cons)) {
-		throw new InterpreterException(_bad_type, args[0].typeId(),
-					       args[1].typeId());
+	    CronoStruct struct = v.getEnv().getStruct((Symbol)args[0]);
+	    if(struct == null) {
+		throw new InterpreterException(_no_struct_in_scope, args[0]);
 	    }
 	    
-	    
+	    return struct.copy();
         }
         public String toString() {
+	    return _name;
         }
     }),
-	*/
+    SUBSTRUCT(new Function(new TypeId[]{Symbol.TYPEID, Symbol.TYPEID,
+					Cons.TYPEID},
+	                   Nil.TYPEID, 3, false, EvalType.NONE)
+    {
+	private static final String _name = "substruct";
+	private static final String _no_struct_in_scope =
+	    "substruct: no structure definition for %s in scope";
+	
+        public CronoType run(Visitor v, CronoType[] args) {
+	    CronoStruct par = v.getEnv().getStruct((Symbol)args[1]);
+	    if(par == null) {
+		throw new InterpreterException(_no_struct_in_scope, args[1]);
+	    }
+	    Map<String, CronoStruct.Field> fields;
+	    fields = CronoStruct.BuildFieldMap(_name, (Cons)args[2]);
+	    v.getEnv().put(new CronoStruct(args[0].toString(), fields, par));
+	    return Nil.NIL;
+        }
+        public String toString() {
+	    return _name;
+        }
+    }),
+    DEFSTRUCT(new Function(new TypeId[]{Symbol.TYPEID, Cons.TYPEID},
+			   Nil.TYPEID, 2, false, EvalType.NONE)
+    {
+	private static final String _name = "defstruct";
+        public CronoType run(Visitor v, CronoType[] args) {
+	    Map<String, CronoStruct.Field> fields;
+	    fields = CronoStruct.BuildFieldMap(_name, (Cons)args[1]);
+	    v.getEnv().put(new CronoStruct(args[0].toString(), fields));
+	    return Nil.NIL;
+        }
+        public String toString() {
+	    return _name;
+        }
+    }),
     EVAL(new Function(new TypeId[]{CronoString.TYPEID}, Cons.TYPEID, 1)
     {
         public CronoType run(Visitor v, CronoType[] args) {
