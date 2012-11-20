@@ -193,12 +193,15 @@ public class Interpreter extends Visitor {
 	}
 	
 	/* The initial value is not a function */
+	throw new InterpreterException("Invalid Function Application: %s is not a function in %s", value, c);
+	/*
 	List<CronoType> list = new LinkedList<CronoType>();
 	list.add(value);
 	while(iter.hasNext()) {
 	    list.add(iter.next().accept(this));
 	}
 	return Cons.fromList(list);
+	*/
     }
     
     public CronoType visit(Atom a) {
