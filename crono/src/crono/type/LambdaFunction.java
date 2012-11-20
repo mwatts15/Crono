@@ -1,5 +1,6 @@
 package crono.type;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -8,10 +9,10 @@ import crono.Visitor;
 
 public class LambdaFunction extends Function {
     public final Symbol[] arglist;
-    public final CronoType body; /*< AST head node */
+    public final CronoType body[]; /*< AST head node */
     public final Environment environment; /*< for scoping */
     
-    public LambdaFunction(Symbol[] args, CronoType body, Environment env) {
+    public LambdaFunction(Symbol[] args, CronoType body[], Environment env) {
 	super(new TypeId[args.length], CronoType.TYPEID, args.length);
 	
 	for(int i = 0; i < args.length; ++i) {
@@ -21,7 +22,6 @@ public class LambdaFunction extends Function {
 	this.body = body;
 	this.environment = new Environment(env);
     }
-    
     public LambdaFunction(LambdaFunction fun) {
 	this(fun.arglist, fun.body, fun.environment);
     }
@@ -45,7 +45,10 @@ public class LambdaFunction extends Function {
 	}
 	
 	v.pushEnv(env);
-	CronoType ret = body.accept(v);
+	CronoType ret = null;
+	for(int i = 0; i < body.length; ++i) {
+	    ret = body[i].accept(v);
+	}
 	v.popEnv();
 	
 	return ret;
@@ -63,6 +66,8 @@ public class LambdaFunction extends Function {
 	}
 	builder.append(")");
 	
-	return String.format("(\\ %s %s)", builder.toString(), body);
+	String bodystr =
+	    (body.length > 1) ? Arrays.toString(body) : body[0].toString();
+	return String.format("(\\ %s %s)", builder.toString(), bodystr);
     }
 }

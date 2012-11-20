@@ -119,7 +119,10 @@ public class Interpreter extends Visitor {
 		    reserve = eval;
 		    eval = Function.EvalType.PARTIAL;
 		    pushEnv(env);
-		    CronoType lbody = lfun.body.accept(this);
+		    CronoType[] lbody = new CronoType[lfun.body.length];
+		    for(int i = 0; i < lfun.body.length; ++i) {
+			lbody[i] = lfun.body[i].accept(this);
+		    }
 		    popEnv();
 		    eval = reserve;
 		    
@@ -134,6 +137,8 @@ public class Interpreter extends Visitor {
 		body.add(fun);
 		
 		body.addAll(args); /*< Dump args in order into the new cons */
+		CronoType[] barr = new CronoType[body.size()];
+		barr = body.toArray(barr);
 		
 		/* Add symbols for missing args */
 		List<Symbol> arglist = new ArrayList<Symbol>();
@@ -146,8 +151,8 @@ public class Interpreter extends Visitor {
 		
 		/* Create a new lambda */
 		Symbol[] narglist = new Symbol[arglist.size()];
-		return new LambdaFunction(arglist.toArray(narglist),
-					  Cons.fromList(body), getEnv());
+		return new LambdaFunction(arglist.toArray(narglist), barr,
+					  getEnv());
 	    }
 	    if(arglen > nargs && !fun.variadic) {
 		throw new RuntimeException(String.format(_too_many_args, fun,

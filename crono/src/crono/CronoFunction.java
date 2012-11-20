@@ -143,7 +143,14 @@ public enum CronoFunction {
 	    }
 	    
 	    Symbol[] arglist = new Symbol[list.size()];
-	    return new LambdaFunction(list.toArray(arglist), args[1],
+	    CronoType[] body;
+	    List<CronoType> blist = new LinkedList<CronoType>();
+	    for(int i = 1; i < args.length; ++i) {
+		blist.add(args[i]);
+	    }
+	    body = new CronoType[blist.size()];
+	    body = blist.toArray(body);
+	    return new LambdaFunction(list.toArray(arglist), body,
 				      v.getEnv());
 	}
 	public String toString() {
@@ -193,7 +200,9 @@ public enum CronoFunction {
 	    for(int i = 1; i < args.length; ++i) {
 		bodylist.add(args[i]);
 	    }
-	    CronoType body = Cons.fromList(bodylist);
+	    CronoType[] body = new CronoType[bodylist.size()];
+	    body = bodylist.toArray(body);
+	    
 	    CronoType[] largs = new CronoType[arglist.size()];
 	    largs = arglist.toArray(largs);
 	    
