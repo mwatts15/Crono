@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import crono.type.Cons;
+import crono.type.CronoArray;
 import crono.type.CronoCharacter;
 import crono.type.CronoFloat;
 import crono.type.CronoInteger;
@@ -83,6 +84,42 @@ public enum CronoFunction {
 	}
 	public String toString() {
 	    return "list";
+	}
+    }),
+    GET(new Function(new TypeId[]{CronoArray.TYPEID, CronoInteger.TYPEID},
+		     CronoType.TYPEID, 2)
+    {
+	public CronoType run(Visitor v, CronoType[] args) {
+	    int index = (int)((CronoInteger)args[1]).value;
+	    ((CronoArray)args[0]).get(index);
+	    return args[0];
+	}
+	public String toString() {
+	    return "get";
+	}
+    }),
+    PUT(new Function(new TypeId[]{CronoArray.TYPEID, CronoInteger.TYPEID,
+				  CronoType.TYPEID},
+	    CronoType.TYPEID, 3)
+    {
+	public CronoType run(Visitor v, CronoType[] args) {
+	    int index = (int)((CronoInteger)args[1]).value;
+	    ((CronoArray)args[0]).put(index, args[2]);
+	    return args[0];
+	}
+	public String toString() {
+	    return "put";
+	}
+    }),
+    APPEND(new Function(new TypeId[]{CronoArray.TYPEID, CronoType.TYPEID},
+			CronoType.TYPEID, 2)
+    {
+	public CronoType run(Visitor v, CronoType[] args) {
+	    ((CronoArray)args[0]).append(args[1]);
+	    return args[0];
+	}
+	public String toString() {
+	    return "append";
 	}
     }),
     DEFINE(new Function(new TypeId[]{Symbol.TYPEID, CronoType.TYPEID},
@@ -616,7 +653,7 @@ public enum CronoFunction {
 	    if(!(args[0] instanceof CronoString)) {
 		throw new InterpreterException(_bad_type, args[0].typeId());
 	    }
-	    String fname = ((CronoString)args[0]).image();
+	    String fname = ((CronoString)args[0]).toString();
 	    String lname = fname.toLowerCase();
 	    if(lname.endsWith(".lisp") || lname.endsWith(".crono")) {
 		return loadLisp(v, fname);
@@ -631,13 +668,7 @@ public enum CronoFunction {
     {
         public CronoType run(Visitor v, CronoType[] args) {
 	    for(int i = 0; i < args.length; ++i) {
-		if(args[i] instanceof CronoString) {
-		    System.out.print(((CronoString)args[i]).image());
-		}else if(args[i] instanceof CronoCharacter) {
-		    System.out.print(((CronoCharacter)args[i]).ch);
-		}else {
-		    System.out.print(args[i]);
-		}
+		System.out.print(args[i].toString());
 	    }
 	    return Nil.NIL;
         }
@@ -714,7 +745,7 @@ public enum CronoFunction {
     {
         public CronoType run(Visitor v, CronoType[] args) {
 	    StringReader reader;
-	    reader = new StringReader(((CronoString)args[0]).image());
+	    reader = new StringReader(((CronoString)args[0]).toString());
 	    
 	    Parser p = new Parser(reader);
 	    

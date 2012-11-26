@@ -113,7 +113,7 @@ public class Crono {
 	    while(statement != null) {
 		try{
 		    statement = statement.accept(v);
-		    System.out.printf("Result: %s\n", statement.toString());
+		    System.out.printf("Result: %s\n", statement.repr());
 		}catch(RuntimeException re) {
 		    String message = re.getMessage();
 		    if(message != null) {

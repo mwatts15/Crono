@@ -7,6 +7,9 @@ public abstract class CronoType {
     
     public abstract TypeId typeId();
     public abstract String toString();
+    public String repr() {
+	return toString();
+    }
     
     public abstract CronoType accept(Visitor v);
 }
