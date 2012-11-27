@@ -68,7 +68,6 @@ public class OptionParser {
 	int arglen = args[current].length();
 	if(subarg == -1) {
 	    if("--".equals(args[current]) || "//".equals(args[current])) {
-		System.err.println("Found stream stop symbol");
 		optchar = args[current];
 		current++;
 		return -1;
@@ -76,11 +75,9 @@ public class OptionParser {
 	    
 	    switch(opttype(args[current])) {
 	    case SHORT_OPTION:
-		System.err.println("Found short option stream");
 		subarg = 1;
 		break;
 	    case LONG_OPTION:
-		System.err.println("Found long option");
 		String optstr = args[current].substring(2);
 		Option opt = match(options, optstr);
 		if(opt != null) {
@@ -108,10 +105,8 @@ public class OptionParser {
 	}
 	
 	char optionchar = args[current].charAt(subarg);
-	System.err.printf("Matching option %c ... ", optionchar);
 	Option opt = match(options, optionchar);
 	if(opt != null) {
-	    System.err.println("Matched");
 	    if(opt.arg) {
 		/* End of option stream, take whole next argument */
 		if(subarg == arglen - 1) {
@@ -131,11 +126,8 @@ public class OptionParser {
 		subarg++;
 	    }
 	    
-	    System.err.printf("Returning %d(%c)\n", ((int)(opt.shortopt)),
-			      opt.shortopt);
 	    return ((int)(opt.shortopt));
 	}
-	System.err.printf("Failed");
 	
 	optchar = "" + optionchar;
 	current++;
