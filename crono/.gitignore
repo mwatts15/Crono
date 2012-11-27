@@ -11,6 +11,7 @@ TokenMgrError.java
 *.log
 *.toc
 *.pdf
+*.ignore
 preso.nav
 preso.out
 preso.snm
