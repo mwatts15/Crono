@@ -8,23 +8,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import crono.type.Cons;
-import crono.type.CronoArray;
-import crono.type.CronoCharacter;
-import crono.type.CronoFloat;
-import crono.type.CronoInteger;
-import crono.type.CronoNumber;
-import crono.type.CronoPrimitive;
-import crono.type.CronoString;
-import crono.type.CronoStruct;
-import crono.type.CronoType;
-import crono.type.Function;
+import crono.type.*;
 import crono.type.Function.EvalType;
-import crono.type.Nil;
-import crono.type.LambdaFunction;
-import crono.type.Symbol;
-import crono.type.TruthValue;
-import crono.type.TypeId;
 
 /**
  * Define all builtins here. If the function is not variadic, don't define the
@@ -138,6 +123,38 @@ public enum CronoFunction {
 	}
 	public String toString() {
 	    return "define";
+	}
+    }),
+    DEFUN(new Function(new TypeId[]{Symbol.TYPEID, Cons.TYPEID,
+				    CronoType.TYPEID}, LambdaFunction.TYPEID,
+	    3, true, EvalType.NONE)
+    {
+	private static final String _bad_arg =
+	    "defun: argument list must be symbols; got %s in argument list";
+	public CronoType run(Visitor v, CronoType[] args) {
+	    List<CronoType> list = ((Cons)args[1]).toList();
+	    for(CronoType item : list) {
+		if(!(item instanceof Symbol)) {
+		    throw new InterpreterException(_bad_arg,item.typeId());
+		}
+	    }
+	    
+	    Symbol[] arglist = new Symbol[list.size()];
+	    CronoType[] body;
+	    List<CronoType> blist = new LinkedList<CronoType>();
+	    for(int i = 2; i < args.length; ++i) {
+		blist.add(args[i]);
+	    }
+	    body = new CronoType[blist.size()];
+	    body = blist.toArray(body);
+	    LambdaFunction lfun =  new LambdaFunction(list.toArray(arglist),
+						      body, v.getEnv());
+	    v.getEnv().put((Symbol)args[0], lfun);
+	    lfun.environment.put((Symbol)args[0], lfun);
+	    return lfun;
+	}
+	public String toString() {
+	    return "defun";
 	}
     }),
     UNDEFINE(new Function(new TypeId[]{Symbol.TYPEID}, Nil.TYPEID, 1,
@@ -740,6 +757,16 @@ public enum CronoFunction {
         public String toString() {
 	    return _name;
         }
+    }),
+    EXEC(new Function(new TypeId[]{CronoType.TYPEID}, CronoType.TYPEID, 1,
+		      true)
+    {
+	public CronoType run(Visitor v, CronoType[] args) {
+	    return args[args.length - 1];
+	}
+	public String toString() {
+	    return "exec";
+	}
     }),
     EVAL(new Function(new TypeId[]{CronoString.TYPEID}, Cons.TYPEID, 1)
     {

@@ -20,6 +20,7 @@ public class Crono {
 	new Option('q', "quiet"),
 	new Option('s', "static"),
 	new Option('t', "show-types"),
+	new Option('T', "trace")
     };
     public static final String helpstr =
 	"usage Crono [-dDhs]";
@@ -44,7 +45,6 @@ public class Crono {
     
     public static void main(String[] args) {
 	OptionParser optparse = new OptionParser(args);
-	boolean print_ast = false;
 	Interpreter interp = new Interpreter();
 	Visitor v = interp;
 	boolean interactive = (System.console() != null); /*< Java 6 feature */
@@ -64,7 +64,7 @@ public class Crono {
 		System.err.println(helpstr);
 		return;
 	    case 'p':
-		print_ast = true;
+		interp.printast = true;
 		break;
 	    case 'q':
 		interp.dprint_enable = false;
@@ -75,7 +75,9 @@ public class Crono {
 	    case 't':
 		interp.getEnv().show_types = true;
 		break;
-		
+	    case 'T':
+		interp.trace = true;
+		break;
 	    case '?':
 	    default:
 		System.err.printf("Invalid option: %s\n",
@@ -91,10 +93,6 @@ public class Crono {
 	}
 	
 	Parser parser = null;
-	if(print_ast) {
-	    v = new ASTPrinter();
-	}
-	
 	try {
 	    File package_dir = new File("./packages/");
 	    CronoPackage.initLoader(new URL[]{package_dir.toURI().toURL()});
@@ -114,13 +112,15 @@ public class Crono {
 		try{
 		    statement = statement.accept(v);
 		    System.out.printf("Result: %s\n", statement.repr());
-		}catch(RuntimeException re) {
+		}catch(InterpreterException re) {
 		    String message = re.getMessage();
 		    if(message != null) {
 			System.err.println(message);
 		    }else {
 			System.err.println("Unknown Interpreter Error!");
 		    }
+		}catch(RuntimeException re) {
+		    re.printStackTrace();
 		}
 		statement = getStatement(parser);
 	    }

@@ -11,6 +11,7 @@ import crono.type.Atom;
 import crono.type.Cons;
 import crono.type.CronoType;
 import crono.type.Function;
+import crono.type.Function.EvalType;
 import crono.type.LambdaFunction;
 import crono.type.Nil;
 import crono.type.Quote;
@@ -31,9 +32,25 @@ public class Interpreter extends Visitor {
     public boolean dprint_enable;
     public boolean dprint_ident;
     public boolean dynamic;
+    public boolean trace;
+    public boolean printast;
     
     protected int indent_level;
     protected Function.EvalType eval;
+    protected StringBuilder indent;
+    
+    protected static final String _indent_level = "  ";
+    protected static final String _trace_visit = "%sVisiting %s\n";
+    protected static final String _trace_result = "%s  Result: %s\n";
+    
+    protected void indent() {
+	indent.append(_indent_level);
+    }
+    protected void deindent() {
+	int size = indent.length();
+	indent.deleteCharAt(size - 1);
+	indent.deleteCharAt(size - 2);
+    }
     
     public Interpreter() {
 	show_env = false;
@@ -41,7 +58,10 @@ public class Interpreter extends Visitor {
 	dprint_enable = false;
 	dprint_ident = true;
 	dynamic = false;
+	trace = false;
+	printast = false;
 	
+	indent = new StringBuilder();
 	indent_level = 0;
 	eval = Function.EvalType.FULL;
 	
@@ -55,14 +75,36 @@ public class Interpreter extends Visitor {
     
     public CronoType visit(Cons c) {
 	if(eval == Function.EvalType.NONE) {
+	    if(printast) {
+		System.out.printf("%sAST: List Node\n", indent);
+	    }
+	    if(trace) {
+		System.out.printf(_trace_visit, indent, c);
+		System.out.printf(_trace_result, indent, c);
+	    }
 	    return c;
 	}
 	
 	Iterator<CronoType> iter = c.iterator();
 	if(!(iter.hasNext())) {
+	    if(printast) {
+		System.out.printf("%sAST: Nil Node\n", indent);
+	    }
+	    if(trace) {
+		System.out.printf(_trace_visit, indent, "Nil");
+		System.out.printf(_trace_result, indent, "Nil");
+	    }
 	    return c; /*< C is an empty list (may be Nil or T) */
 	}
 	
+	if(printast) {
+	    System.out.printf("%sAST: Function Application Node\n", indent);
+	}
+	if(trace) {
+	    System.out.printf(_trace_visit, indent, c);
+	}
+	indent();
+	boolean treserve = trace, preserve = printast;
 	CronoType value = iter.next().accept(this);
 	if(value instanceof Function) {
 	    Function fun = ((Function)value);
@@ -89,6 +131,10 @@ public class Interpreter extends Visitor {
 		if(arglen == 0) {
 		    /* Special case -- we don't have to do anything to the
 		     * function to return it properly. */
+		    deindent();
+		    if(trace) {
+			System.out.printf(_trace_result, indent, fun);
+		    }
 		    return fun;
 		}
 		
@@ -117,6 +163,8 @@ public class Interpreter extends Visitor {
 		    
 		    /* Evaluate the body as much as possible */
 		    reserve = eval;
+		    trace = false;
+		    printast = false;
 		    eval = Function.EvalType.PARTIAL;
 		    pushEnv(env);
 		    CronoType[] lbody = new CronoType[lfun.body.length];
@@ -125,11 +173,20 @@ public class Interpreter extends Visitor {
 		    }
 		    popEnv();
 		    eval = reserve;
+		    trace = treserve;
+		    printast = preserve;
 		    
 		    /* Return the new, partially evaluated lambda */
 		    Symbol[] arglist = new Symbol[largs.size()];
-		    return new LambdaFunction(largs.toArray(arglist),
-					      lbody, lfun.environment);
+		    
+		    LambdaFunction clfun;
+		    clfun = new LambdaFunction(largs.toArray(arglist), lbody,
+					       lfun.environment);
+		    deindent();
+		    if(trace) {
+			System.out.printf(_trace_result, indent, clfun);
+		    }
+		    return clfun;
 		}
 		/* Builtin partial evaluation */
 		
@@ -151,8 +208,15 @@ public class Interpreter extends Visitor {
 		
 		/* Create a new lambda */
 		Symbol[] narglist = new Symbol[arglist.size()];
-		return new LambdaFunction(arglist.toArray(narglist), barr,
-					  getEnv());
+		LambdaFunction blfun;
+		blfun = new LambdaFunction(arglist.toArray(narglist), barr,
+					   getEnv());
+		deindent();
+		if(trace) {
+		    System.out.printf(_trace_result, indent, blfun);
+		}
+		
+		return blfun;
 	    }
 	    if(arglen > nargs && !fun.variadic) {
 		throw new RuntimeException(String.format(_too_many_args, fun,
@@ -168,7 +232,15 @@ public class Interpreter extends Visitor {
 		lfun = new LambdaFunction(lfun.arglist, lfun.body, getEnv());
 		
 		CronoType[] argarray = new CronoType[args.size()];
-		return lfun.run(this, args.toArray(argarray));
+		
+		trace = false; printast = false;
+		CronoType lresult = lfun.run(this, args.toArray(argarray));
+		trace = treserve; printast = preserve;
+		deindent();
+		if(trace) {
+		    System.out.printf(_trace_result, indent, lresult);
+		}
+		return lresult;
 	    }
 	    if(eval == Function.EvalType.FULL) {
 		CronoType[] argarray = new CronoType[args.size()];
@@ -185,12 +257,25 @@ public class Interpreter extends Visitor {
 						       expected, argstr);
 		    }
 		}
-		return ((Function)value).run(this, args.toArray(argarray));
+		trace = false;
+		printast = false;
+		CronoType fresult;
+		fresult = ((Function)value).run(this, args.toArray(argarray));
+		trace = treserve;
+		printast = preserve;
+		deindent();
+		if(trace) {
+		    System.out.printf(_trace_result, indent, fresult);
+		}
+		
+		return fresult;
 	    }else {
 		args.add(0, value);
+		deindent();
 		return Cons.fromList(args);
 	    }
 	}
+	deindent();
 	
 	/* The initial value is not a function */
 	throw new InterpreterException("Invalid Function Application: %s is not a function in %s", value, c);
@@ -205,7 +290,17 @@ public class Interpreter extends Visitor {
     }
     
     public CronoType visit(Atom a) {
+	if(printast) {
+	    System.out.printf("%sAST: Atom Node -> %s[%s]\n", indent, a,
+			      a.typeId());
+	}
+	if(trace) {
+	    System.out.printf(_trace_visit, indent, a);
+	}
 	if(eval == Function.EvalType.NONE) {
+	    if(trace) {
+		System.out.printf(_trace_result, indent, a);
+	    }
 	    return a;
 	}
 	
@@ -232,10 +327,28 @@ public class Interpreter extends Visitor {
 		t = res; /*< Revert to symbol resolution */
 	    }
 	}
+	if(trace) {
+	    System.out.printf(_trace_result, indent, t);
+	}
 	return t;
     }
     
     public CronoType visit(Quote q) {
-	return q.node;
+	if(printast) {
+	    System.out.printf("%sAST: Quote Node\n");
+	}
+	if(trace) {
+	    System.out.printf(_trace_visit, indent, q);
+	}
+	
+	EvalType reserve = eval;
+	eval = EvalType.NONE;
+	CronoType result = q.node.accept(this);
+	eval = reserve;
+	
+	if(trace) {
+	    System.out.printf(_trace_result, indent, result);
+	}
+	return result;
     }
 }
