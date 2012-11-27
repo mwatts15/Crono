@@ -49,45 +49,34 @@ public class CronoString extends CronoArray {
 	this.size = size;
     }
     
-    public int rank() {
-	return 1;
+    public int size() {
+	return data.length();
     }
-    public int dim(int n) {
-	if(n != 1) {
-	    throw new InterpreterException(_rank_mismatch, n, 1);
-	}
-	return size;
+    public CronoType get(int n) {
+	return new CronoCharacter(data.charAt(n));
     }
-    
-    private int offset(int[] n) {
-	if(n.length > 1) {
-	    throw new InterpreterException(_rank_mismatch, n.length, 1);
-	}
-	if(n[0] >= size) {
-	    throw new InterpreterException(_index_oob, n[0], size);
-	}
-	return n[0];
-    }
-    public CronoType get(int[] n) {
-	return new CronoCharacter(data.charAt(offset(n)));
-    }
-    public CronoType put(int[] n, CronoType item) {
-	data.setCharAt(offset(n), ((CronoCharacter)item).ch);
+    public CronoType put(int n, CronoType item) {
+	data.setCharAt(n, ((CronoCharacter)item).ch);
 	return item;
     }
-    
-    public String image() {
-	return data.toString();
+    public CronoType append(CronoType item) {
+	if(!(item instanceof CronoCharacter)) {
+	    throw new InterpreterException("Bad type: string expects char");
+	}
+	data.append(((CronoCharacter)item).ch);
+	return item;
+    }
+    public CronoType concat(CronoArray array) {
+	return Nil.NIL;
     }
     
     public TypeId typeId() {
 	return CronoString.TYPEID;
     }
     public String toString() {
-	StringBuilder builder = new StringBuilder();
-	builder.append("\"");
-	builder.append(data);
-	builder.append("\"");
-	return builder.toString();
+	return data.toString();
+    }
+    public String repr() {
+	return "\"" + data.toString() + "\"";
     }
 }

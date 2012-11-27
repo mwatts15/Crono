@@ -19,6 +19,7 @@ import crono.type.CronoInteger;
 import crono.type.CronoString;
 import crono.type.CronoType;
 import crono.type.CronoTypeId;
+import crono.type.CronoVector;
 import crono.type.Nil;
 import crono.type.Quote;
 import crono.type.Symbol;
@@ -52,12 +53,14 @@ TOKEN:
 {
     < LPAR : "(" >
   | < RPAR : ")" >
+  | < RBRACKET : "]" >
+  | < LBRACKET : "[" >
   | < INTEGER : ("-")? (["0"-"9"])+ >
   | < FLOAT : ("-")? (["0"-"9"])* "." (["0"-"9"])+ ("f")? >
   | < CHAR : "'" ([" "-"~"] | ("\\" ~["\n", "\r", "\t"])) "'" >
   | < STRING : "\"" ("\\" ~["\n"] | ~["\"", "\n"])* "\"" >
   | < TYPEID : ":" (["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","-"])?)+ >
-  | < SYMBOL : ["!"-"&", "*"-"/", ";"-"~"] (["!"-"'", "*"-"~"])* >
+  | < SYMBOL : ["!"-"&", "*"-"/", ";"-"Z", "\\", "^"-"~"] (["!"-"'", "*"-"/", ";"-"Z", "\\", "^"-"~"])* >
   | < QUOTE : "'" >
 }
 
@@ -70,6 +73,8 @@ Atom atom():
 {
   Token n;
   Atom a;
+  CronoType node;
+  ArrayList<CronoType> types = new ArrayList<CronoType>();
 }
 {
     n = <INTEGER> {
@@ -89,6 +94,18 @@ Atom atom():
         System.out.println("Parser: Saw <CHAR>");
       }
       return new CronoCharacter(n.image);
+    }
+  | <LBRACKET> 
+    (
+      node = node() {
+        types.add(node);
+      }
+    )* <RBRACKET> {
+      if(types.size() > 0) {
+        return new CronoVector(types.toArray(new CronoType[types.size()]));
+      }else {
+        return new CronoVector(1);
+      }
     }
   | n = <TYPEID> {
       if(debug) {

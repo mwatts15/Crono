@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import crono.type.*;
 
@@ -55,6 +56,92 @@ public enum CronoFunction {
         {
             return "cdr";
         }
+    }),
+    LIST(new Function(new TypeId[]{CronoType.TYPEID}, Cons.TYPEID, 1, true)
+    {
+        public CronoType run(Visitor v, List<CronoType> args) {
+            return c.fromList();
+        }
+        public String toString() {
+            return "list";
+        }
+    }),
+    GET(new Function(new TypeId[]{CronoArray.TYPEID, CronoInteger.TYPEID},
+		     CronoType.TYPEID, 2)
+    {
+        public CronoType run(Visitor v, List<CronoType> args) {
+            CronoArray a = args.remove(0);
+            int index = (int)((CronoInteger)args.remove(0)).value;
+            return a.get(index);
+        }
+        public String toString() {
+            return "get";
+        }
+    }),
+    PUT(new Function(new TypeId[]{CronoArray.TYPEID, CronoInteger.TYPEID,
+				  CronoType.TYPEID},
+	    CronoType.TYPEID, 3)
+    {
+        public CronoType run(Visitor v, List<CronoType> args) {
+            CronoArray a = (CronoArray) args.remove(0);
+            int index = (int)((CronoInteger)args.remove(0)).value;
+            CronoType new_val = args.remove(0);
+            /* Maybe return nil instead? */
+            a.put(index, new_val);
+            return a;
+        }
+        public String toString() {
+            return "put";
+        }
+    }),
+    APPEND(new Function(new TypeId[]{CronoArray.TYPEID, CronoType.TYPEID},
+			CronoType.TYPEID, 2)
+    {
+        public CronoType run(Visitor v, List<CronoType> args) {
+            CronoArray a = (CronoArray) args.remove(0);
+            a.append(args.remove(0));
+            return a;
+        }
+        public String toString() {
+            return "append";
+        }
+    }),
+    LAMBDA(new Function(new TypeId[]{Cons.TYPEID, CronoType.TYPEID},
+			Function.TYPEID, 2, true, EvalType.NONE)
+    {
+	private static final String _bad_type =
+	    "\\: expected :cons :any, got %s, %s";
+	private static final String _bad_arg =
+	    "\\: arguments must be :symbol, got %s";
+
+	public CronoType run(Visitor v, List<CronoType> args) {
+	    if(!(args[0] instanceof Cons)) {
+		throw new InterpreterException(_bad_type,
+					       args[0].typeId(),
+					       args[1].typeId());
+	    }
+
+	    List<CronoType> list = ((Cons)args[0]).toList();
+	    for(CronoType item : list) {
+		if(!(item instanceof Symbol)) {
+		    throw new InterpreterException(_bad_arg,item.typeId());
+		}
+	    }
+
+	    Symbol[] arglist = new Symbol[list.size()];
+	    CronoType[] body;
+	    List<CronoType> blist = new LinkedList<CronoType>();
+	    for(int i = 1; i < args.length; ++i) {
+		blist.add(args[i]);
+	    }
+	    body = new CronoType[blist.size()];
+	    body = blist.toArray(body);
+	    return new LambdaFunction(list.toArray(arglist), body,
+				      v.getEnv());
+	}
+	public String toString() {
+	    return "\\";
+	}
     }),
     EQ(new Function(new TypeId[]{CronoType.TYPEID, CronoType.TYPEID},
             Cons.TYPEID, 2)
@@ -133,7 +220,6 @@ public enum CronoFunction {
     MUL(new Function(new TypeId[]{CronoNumber.TYPEID, CronoNumber.TYPEID},
              CronoNumber.TYPEID, 2)
     {
-
         public CronoType run(Visitor v, List<CronoType> args)
         {
             CronoNumber lhs = (CronoNumber) args.remove(0);
@@ -165,12 +251,47 @@ public enum CronoFunction {
             return "*";
         }
     }),
+    DIV(new Function(new TypeId[]{CronoNumber.TYPEID, CronoNumber.TYPEID},
+		     CronoNumber.TYPEID, 2)
+    {
+        public CronoType run(Visitor v, List<CronoType> args) {
+            CronoNumber lhs = (CronoNumber) args.remove(0);
+            CronoNumber rhs = (CronoNumber) args.remove(0);
+
+            if(lhs instanceof CronoFloat) {
+                double val1, val2;
+                val1 = ((CronoFloat)lhs).value;
+                if(rhs instanceof CronoFloat) {
+                    val2 = ((CronoFloat)rhs).value;
+                }else {
+                    val2 = (double)(((CronoInteger)rhs).value);
+                }
+                return new CronoFloat(val1 / val2);
+            }else {
+                if(rhs instanceof CronoFloat) {
+                    double val1, val2;
+                    val1 = (double)(((CronoInteger)lhs).value);
+                    val2 = ((CronoFloat)rhs).value;
+                    return new CronoFloat(val1 / val2);
+                }else {
+                    long val1, val2;
+                    val1 = ((CronoInteger)lhs).value;
+                    val2 = ((CronoInteger)rhs).value;
+                    return new CronoInteger(val1 / val2);
+                }
+            }
+        }
+
+        public String toString() {
+            return "/";
+        }
+    }),
     //INT(new Function(new TypeId[]{CronoPrimitive.TYPEID},CronoInteger.TYPEID,1)
     //{
 	//public static final String _bad_type =
 		//"INT: Excepted one of :char, :float, or :int; got %s";
 
-	//public CronoType run(Visitor v, CronoType[] args) {
+	//public CronoType run(Visitor v, List<CronoType> args) {
 		//if(args[0] instanceof CronoCharacter) {
 		//return new CronoInteger(((long)((CronoCharacter)args[0]).ch));
 		//}else if(args[0] instanceof CronoFloat) {
@@ -190,7 +311,7 @@ public enum CronoFunction {
 	//private static final String _bad_type =
 		//"CHAR: expected one of :int, or :char; got %s";
 
-	//public CronoType run(Visitor v, CronoType[] args) {
+	//public CronoType run(Visitor v, List<CronoType> args) {
 		//if(args[0] instanceof CronoInteger) {
 		//return new CronoCharacter((char)((CronoInteger)args[0]).value);
 		//}else if(args[0] instanceof CronoFloat) {
@@ -209,7 +330,7 @@ public enum CronoFunction {
 	//private static final String _bad_type =
 		//"FLOAT: expected one of :int, or :float; got %s";
 
-	//public CronoType run(Visitor v, CronoType[] args) {
+	//public CronoType run(Visitor v, List<CronoType> args) {
 		//if(args[0] instanceof CronoInteger) {
 		//return new CronoFloat((double)((CronoInteger)args[0]).value);
 		//}else if(args[0] instanceof CronoCharacter) {
@@ -276,11 +397,11 @@ public enum CronoFunction {
 		//return TruthValue.T;
 	//}
 
-        //public CronoType run(Visitor v, CronoType[] args) {
+        //public CronoType run(Visitor v, List<CronoType> args) {
 		//if(!(args[0] instanceof CronoString)) {
 		//throw new InterpreterException(_bad_type, args[0].typeId());
 		//}
-		//String fname = ((CronoString)args[0]).image();
+		//String fname = ((CronoString)args[0]).toString();
 		//String lname = fname.toLowerCase();
 		//if(lname.endsWith(".lisp") || lname.endsWith(".crono")) {
 		//return loadLisp(v, fname);
@@ -293,15 +414,9 @@ public enum CronoFunction {
     //}),
     //PRINT(new Function(new TypeId[]{CronoType.TYPEID}, Nil.TYPEID, 1, true)
     //{
-        //public CronoType run(Visitor v, CronoType[] args) {
+        //public CronoType run(Visitor v, List<CronoType> args) {
 		//for(int i = 0; i < args.length; ++i) {
-		//if(args[i] instanceof CronoString) {
-			//System.out.print(((CronoString)args[i]).image());
-		//}else if(args[i] instanceof CronoCharacter) {
-			//System.out.print(((CronoCharacter)args[i]).ch);
-		//}else {
-			//System.out.print(args[i]);
-		//}
+		//System.out.print(args[i].toString());
 		//}
 		//return Nil.NIL;
         //}
@@ -311,7 +426,7 @@ public enum CronoFunction {
     //}),
     //PRINTLN(new Function(new TypeId[]{CronoType.TYPEID}, Nil.TYPEID, 1, true)
     //{
-	//public CronoType run(Visitor v, CronoType[] args) {
+	//public CronoType run(Visitor v, List<CronoType> args) {
 		//PRINT.function.run(v, args);
 		//System.out.println();
 		//return Nil.NIL;
@@ -320,48 +435,65 @@ public enum CronoFunction {
 		//return "println";
 	//}
     //}),
-	//[>
-    //STRUCT(new Function() {
-        //public int arity() {
-		//return 1;
-        //}
-        //public CronoType run(Visitor v, CronoType[] args) {
-
-        //}
-        //public String toString() {
-        //}
-    //}),
-    //SUBSTRUCT(new Function() {
-        //public int arity() {
-        //}
-        //public CronoType run(Visitor v, CronoType[] args) {
-        //}
-        //public String toString() {
-        //}
-    //}),
-    //NEWSTRUCT(new Function() {
-	//public static final String _bad_type =
-		//"NEWSTRUCT: expected types :symbol :cons, got %s %s";
-        //public int arity() {
-		//return 2;
-        //}
-        //public CronoType run(Visitor v, CronoType[] args) {
-		//if(!(args[0] instanceof Symbol && args[1] instanceof Cons)) {
-		//throw new InterpreterException(_bad_type, args[0].typeId(),
-						   //args[1].typeId());
+    //STRUCT(new Function(new TypeId[]{Symbol.TYPEID}, CronoStruct.TYPEID, 1,
+			//false, EvalType.NONE)
+    //{
+	//private static final String _name = "struct";
+	//private static final String _no_struct_in_scope =
+		//"struct: No structure definition for %s in scope";
+        //public CronoType run(Visitor v, List<CronoType> args) {
+		//CronoStruct struct = v.getEnv().getStruct((Symbol)args[0]);
+		//if(struct == null) {
+		//throw new InterpreterException(_no_struct_in_scope, args[0]);
 		//}
 
-
+		//return struct.copy();
         //}
         //public String toString() {
+		//return _name;
         //}
     //}),
-	//*/
+    //SUBSTRUCT(new Function(new TypeId[]{Symbol.TYPEID, Symbol.TYPEID,
+					//Cons.TYPEID},
+					   //Nil.TYPEID, 3, false, EvalType.NONE)
+    //{
+	//private static final String _name = "substruct";
+	//private static final String _no_struct_in_scope =
+		//"substruct: no structure definition for %s in scope";
+
+        //public CronoType run(Visitor v, List<CronoType> args) {
+		//CronoStruct par = v.getEnv().getStruct((Symbol)args[1]);
+		//if(par == null) {
+		//throw new InterpreterException(_no_struct_in_scope, args[1]);
+		//}
+		//Map<String, CronoStruct.Field> fields;
+		//fields = CronoStruct.BuildFieldMap(_name, (Cons)args[2]);
+		//v.getEnv().put(new CronoStruct(args[0].toString(), fields, par));
+		//return Nil.NIL;
+        //}
+        //public String toString() {
+		//return _name;
+        //}
+    //}),
+    //DEFSTRUCT(new Function(new TypeId[]{Symbol.TYPEID, Cons.TYPEID},
+			   //Nil.TYPEID, 2, false, EvalType.NONE)
+    //{
+	//private static final String _name = "defstruct";
+        //public CronoType run(Visitor v, List<CronoType> args) {
+		//Map<String, CronoStruct.Field> fields;
+		//fields = CronoStruct.BuildFieldMap(_name, (Cons)args[1]);
+		//v.getEnv().put(new CronoStruct(args[0].toString(), fields));
+		//return Nil.NIL;
+        //}
+        //public String toString() {
+		//return _name;
+        //}
+    //}),
     //EVAL(new Function(new TypeId[]{CronoString.TYPEID}, Cons.TYPEID, 1)
     //{
-        //public CronoType run(Visitor v, CronoType[] args) {
+        //public CronoType run(Visitor v, List<CronoType> args) {
 		//StringReader reader;
-		//reader = new StringReader(((CronoString)args[0]).image());
+		//reader = new StringReader(((CronoString)args[0]).toString());
 
 		//Parser p = new Parser(reader);
 
@@ -371,10 +503,6 @@ public enum CronoFunction {
 		//throw new InterpreterException("EVAL: parse error\n%s",
 						   //pe.getMessage());
 		//}
-        //}
-        //public String toString() {
-		//return "eval";
-        //}
     //}),
     ;
 

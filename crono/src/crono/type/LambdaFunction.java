@@ -1,5 +1,6 @@
 package crono.type;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -8,11 +9,12 @@ import crono.Visitor;
 
 public class LambdaFunction extends Function {
     public final Symbol[] arglist;
-    public final CronoType body; /*< AST head node */
+    public final CronoType[] body; /*< AST head node */
     public final Environment environment; /*< for scoping */
 
-    public LambdaFunction(Symbol[] args, CronoType body, Environment env) {
-        /* We might want this to specify argument type later
+    public LambdaFunction(Symbol[] args, CronoType[] body, Environment env) {
+        /*
+         * We might want this to specify argument type later
          */
         super(new TypeId[args.length], CronoType.TYPEID, args.length);
 
@@ -48,7 +50,10 @@ public class LambdaFunction extends Function {
         }
 
         v.pushEnv(env);
-        CronoType ret = body.accept(v);
+        CronoType ret = null;
+        for(int i = 0; i < body.length; ++i) {
+            ret = body[i].accept(v);
+        }
         v.popEnv();
 
         return ret;
@@ -65,6 +70,8 @@ public class LambdaFunction extends Function {
             builder.append(arglist[arglist.length - 1]);
         }
         builder.append(")");
+        String bodystr =
+            (body.length > 1) ? Arrays.toString(body) : body[0].toString();
 
         return String.format("(Lambda %s %s)", builder.toString(), body);
     }

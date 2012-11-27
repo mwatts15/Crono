@@ -9,10 +9,11 @@ public abstract class CronoArray extends Atom {
 	this.accept = accept;
     }
     
-    public abstract int rank();
-    public abstract int dim(int n);
-    public abstract CronoType get(int[] n);
-    public abstract CronoType put(int[] n, CronoType item);
+    public abstract int size();
+    public abstract CronoType get(int n);
+    public abstract CronoType put(int n, CronoType item);
+    public abstract CronoType append(CronoType item);
+    public abstract CronoType concat(CronoArray array);
     
     public TypeId accept() {
 	return accept;

@@ -2,6 +2,8 @@ package crono.type;
 
 import crono.InterpreterException;
 
+import java.util.ArrayList;
+
 public class CronoVector extends CronoArray {
     public static final TypeId TYPEID = new TypeId(":vector",
 						   CronoVector.class,
@@ -13,81 +15,64 @@ public class CronoVector extends CronoArray {
     private static final String _inv_rank =
 	"Array Rank must be a positive, non-zero integer";
     
-    protected CronoType[] data;
-    protected int[] dimensions;
-    protected int rank, size;
+    protected ArrayList<CronoType> data;
+    protected int size;
     protected TypeId type;
     
-    public CronoVector(int rank, int[] dimensions) {
-	this(rank, dimensions, CronoType.TYPEID);
+    public CronoVector(int size) {
+	this(size, CronoType.TYPEID);
     }
     
-    public CronoVector(int rank, int[] dimensions, TypeId accept) {
+    public CronoVector(int size, TypeId accept) {
 	super(accept);
 	
-	if(rank <= 0) {
-	    throw new InterpreterException(_inv_rank);
-	}
-	this.rank = rank;
 	this.type = new NestedTypeId(":vector", CronoVector.class,
 				     new TypeId[]{accept}, TYPEID);
 	
-	if(dimensions.length != rank) {
-	    throw new InterpreterException(_rank_dim_mismatch,
-					   dimensions.length, rank);
-	}
-	
-	this.dimensions = dimensions;
-	size = 1;
-	for(int i = 0; i < dimensions.length; ++i) {
-	    size *= dimensions[i];
-	}
-	
-	this.data = new CronoType[size];
-    }
-    
-    public CronoVector(int rank, int[] dimensions, TypeId accept,
-		      CronoType[] data)
-    {
-	this(rank, dimensions, accept);
-	
-	if(data.length != size) {
-	    throw new InterpreterException(_data_size_mismatch, data.length,
-					   size);
-	}
-	
+	this.size = size;
+	this.data = new ArrayList<CronoType>(size);
 	for(int i = 0; i < size; ++i) {
-	    this.data[i] = data[i];
+	    this.data.add(i, Nil.NIL);
 	}
+    }
+    public CronoVector(CronoType[] data) {
+	this(data, CronoType.TYPEID);
+    }
+    public CronoVector(CronoType[] data, TypeId accept) {
+	super(accept);
+	this.type = new NestedTypeId(":vector", CronoVector.class,
+				     new TypeId[]{accept}, TYPEID);
+	this.data = new ArrayList<CronoType>();
+	for(int i = 0; i < data.length; ++i) {
+	    this.data.add(data[i]);
+	}
+	this.size = data.length;
     }
     
-    public int rank() {
-	return rank;
+    public int size() {
+	return size;
     }
-    public int dim(int n) {
-	if(n > dimensions.length) {
-	    throw new InterpreterException("rank mismatch");
+    
+    public CronoType get(int n) {
+	if(n >= size || n < 0) {
+	    throw new InterpreterException("Array index out of bounds");
 	}
-	return dimensions[n];
+	return data.get(n);
     }
-    private int offset(int[] n) {
-	int pos = n[n.length - 1];
-	int step = dimensions[n.length - 1];
-	for(int i = n.length - 2; i >= 0; --i) {
-	    if(n[i] >= dimensions[i]) {
-		throw new InterpreterException("Vector index out of bounds");
-	    }
-	    pos += step * n[i];
-	    step *= dimensions[i];
+    public CronoType put(int n, CronoType item) {
+	if(n >= size || n < 0) {
+	    throw new InterpreterException("Array index out of bounds");
 	}
-	return pos;
-    }
-    public CronoType get(int[] n) {
-	return data[offset(n)];
-    }
-    public CronoType put(int[] n, CronoType item) {
-	data[offset(n)] = item;
+	data.set(n, item);
 	return item;
+    }
+    public CronoType append(CronoType item) {
+	data.add(item);
+	size++;
+	return item;
+    }
+    public CronoType concat(CronoArray array) {
+	return Nil.NIL;
     }
     
     public TypeId typeId() {
@@ -95,7 +80,13 @@ public class CronoVector extends CronoArray {
     }
     public String toString() {
 	StringBuilder builder = new StringBuilder();
-	builder.append("Not implemented =D");
+	builder.append("[");
+	for(int i = 0; i < size - 1; ++i) {
+	    builder.append(data.get(i).repr());
+	    builder.append(", ");
+	}
+	builder.append(data.get(size - 1).repr());
+	builder.append("]");
 	return builder.toString();
     }
 }
