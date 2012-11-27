@@ -1,5 +1,7 @@
 package crono;
 import java.util.List;
+import java.util.LinkedList;
+import java.util.ListIterator;
 import crono.type.Function.EvalType;
 import crono.type.*;
 /* These are like functions but have evaluation
@@ -11,16 +13,41 @@ public enum CronoSpecial {
     LAMBDA(new Special(new TypeId[]{Cons.TYPEID, CronoType.TYPEID},
             Function.TYPEID, 2, true, EvalType.NONE)
     {
+            private static final String _bad_type =
+                "\\: expected :cons :any, got %s, %s";
+            private static final String _bad_arg =
+                "\\: arguments must be :symbol, got %s";
         public CronoType run(Visitor v, List<CronoType> args) {
+                if(!(args.get(0) instanceof Cons)) {
+                    throw new InterpreterException(_bad_type,
+                        args.get(0).typeId(),
+                        args.get(1).typeId());
+                }
                 List<CronoType> list = ((Cons)args.remove(0)).toList();
 
+                for(CronoType item : list) {
+                    if(!(item instanceof Symbol)) {
+                        throw new InterpreterException(_bad_arg,item.typeId());
+                    }
+                }
+
                 Symbol[] arglist = new Symbol[list.size()];
-                return new LambdaFunction(list.toArray(arglist), args.remove(0),
-                    v.getEnv());
+
+                CronoType[] body;
+                List<CronoType> blist = new LinkedList<CronoType>();
+                ListIterator<CronoType> it = args.listIterator();
+                while (it.hasNext())
+                {
+                    blist.add(it.next());
+                }
+                body = new CronoType[blist.size()];
+                body = blist.toArray(body);
+                return new LambdaFunction(list.toArray(arglist), body,
+                        v.getEnv());
             }
-        public String toString() {
-            return "\\";
-        }
+            public String toString() {
+                return "\\";
+            }
     });
     //DEFINE(new Function(new TypeId[]{Symbol.TYPEID, CronoType.TYPEID},
 			//CronoType.TYPEID, 2, EvalType.NONE)
@@ -73,62 +100,64 @@ public enum CronoSpecial {
     //LET(new Function(new TypeId[]{Cons.TYPEID, CronoType.TYPEID},
 			 //CronoType.TYPEID, 2, true, EvalType.NONE)
     //{
-	//private static final String _subst_list_type =
-		//"LET: substitution list must be :cons, got %s";
-	//private static final String _subst_not_cons =
-		//"LET: expected :cons in substitution list, got %s";
-	//private static final String _subst_not_sym =
-		//"LET: argument names numst be :symbol, got %s";
+        //private static final String _subst_list_type =
+        //"LET: substitution list must be :cons, got %s";
+    //private static final String _subst_not_cons =
+        //"LET: expected :cons in substitution list, got %s";
+    //private static final String _subst_not_sym =
+        //"LET: argument names numst be :symbol, got %s";
 
-	//public CronoType run(Visitor v, CronoType[] args) {
-		//if(!(args[0] instanceof Cons)) {
-		//throw new InterpreterException(_subst_list_type,
-						   //args[0].typeId());
-		//}
+    //public CronoType run(Visitor v, List<CronoType> args) {
+        //if(!(args[0] instanceof Cons)) {
+            //throw new InterpreterException(_subst_list_type,
+                //args[0].typeId());
+        //}
 
-		//List<Symbol> symlist = new LinkedList<Symbol>();
-		//List<CronoType> arglist = new LinkedList<CronoType>();
-		//for(CronoType ct : ((Cons)args[0])) {
-		//if(!(ct instanceof Cons)) {
-			//throw new InterpreterException(_subst_not_cons,
-						   //ct.typeId());
-		//}
+        //List<Symbol> symlist = new LinkedList<Symbol>();
+        //List<CronoType> arglist = new LinkedList<CronoType>();
+        //for(CronoType ct : ((Cons)args[0])) {
+            //if(!(ct instanceof Cons)) {
+                //throw new InterpreterException(_subst_not_cons,
+                    //ct.typeId());
+            //}
 
-		//CronoType car = ((Cons)ct).car();
-		//CronoType cdr = ((Cons)ct).cdr();
-		//if(!(car instanceof Symbol)) {
-			//throw new InterpreterException(_subst_not_sym,
-						   //car.typeId());
-		//}
+            //CronoType car = ((Cons)ct).car();
+            //CronoType cdr = ((Cons)ct).cdr();
+            //if(!(car instanceof Symbol)) {
+                //throw new InterpreterException(_subst_not_sym,
+                        //car.typeId());
+            //}
 
-		//cdr = cdr.accept(v);
-		//symlist.add((Symbol)car);
-		//arglist.add(cdr);
-		//}
+            //cdr = cdr.accept(v);
+            //symlist.add((Symbol)car);
+            //arglist.add(cdr);
+        //}
 
-		//Symbol[] lsyms = new Symbol[symlist.size()];
-		//lsyms = symlist.toArray(lsyms);
+        //Symbol[] lsyms = new Symbol[symlist.size()];
+        //lsyms = symlist.toArray(lsyms);
 
-		//List<CronoType> bodylist = new LinkedList<CronoType>();
-		//for(int i = 1; i < args.length; ++i) {
-		//bodylist.add(args[i]);
-		//}
-		//CronoType body = Cons.fromList(bodylist);
-		//CronoType[] largs = new CronoType[arglist.size()];
-		//largs = arglist.toArray(largs);
+        //List<CronoType> bodylist = new LinkedList<CronoType>();
+        //for(int i = 1; i < args.length; ++i) {
+            //bodylist.add(args[i]);
+        //}
+        //CronoType[] body = new CronoType[bodylist.size()];
+        //body = bodylist.toArray(body);
 
-		//LambdaFunction lambda = new LambdaFunction(lsyms,body,v.getEnv());
-		//return lambda.run(v, largs); [>< -. - <]
-	//}
-	//public String toString() {
-		//return "let";
-	//}
+        //CronoType[] largs = new CronoType[arglist.size()];
+        //largs = arglist.toArray(largs);
+
+        //LambdaFunction lambda = new LambdaFunction(lsyms,body,v.getEnv());
+        //return lambda.run(v, largs); [>< -. - <]
+    //}
+    //public String toString() {
+        //return "let";
+    //}
     //}),
     //IF(new Function(new TypeId[]{CronoType.TYPEID, CronoType.TYPEID,
 				 //CronoType.TYPEID},
 		//CronoType.TYPEID, 3, EvalType.NONE)
     //{
-	//public CronoType run(Visitor v, CronoType[] args) {
+	//public CronoType run(Visitor v, List<CronoType> args) {
 		//CronoType check = args[0].accept(v);
 		//if(check != Nil.NIL) {
 		//return args[1].accept(v);

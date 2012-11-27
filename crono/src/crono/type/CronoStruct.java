@@ -141,7 +141,7 @@ public class CronoStruct extends Function {
         this.type = cs.type;
     }
 
-    public CronoType run(Visitor v, CronoType[] args) {
+    public CronoType run(Visitor v, List<CronoType> args) {
         /* CronoStruct doesn't contain an AST, so we can ignore the visitor */
         Field field;
         switch(args.size()) {

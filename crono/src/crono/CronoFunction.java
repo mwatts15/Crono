@@ -60,7 +60,7 @@ public enum CronoFunction {
     LIST(new Function(new TypeId[]{CronoType.TYPEID}, Cons.TYPEID, 1, true)
     {
         public CronoType run(Visitor v, List<CronoType> args) {
-            return c.fromList();
+            return Cons.fromList(args);
         }
         public String toString() {
             return "list";
@@ -70,7 +70,7 @@ public enum CronoFunction {
 		     CronoType.TYPEID, 2)
     {
         public CronoType run(Visitor v, List<CronoType> args) {
-            CronoArray a = args.remove(0);
+            CronoArray a = (CronoArray) args.remove(0);
             int index = (int)((CronoInteger)args.remove(0)).value;
             return a.get(index);
         }
@@ -105,43 +105,6 @@ public enum CronoFunction {
         public String toString() {
             return "append";
         }
-    }),
-    LAMBDA(new Function(new TypeId[]{Cons.TYPEID, CronoType.TYPEID},
-			Function.TYPEID, 2, true, EvalType.NONE)
-    {
-	private static final String _bad_type =
-	    "\\: expected :cons :any, got %s, %s";
-	private static final String _bad_arg =
-	    "\\: arguments must be :symbol, got %s";
-
-	public CronoType run(Visitor v, List<CronoType> args) {
-	    if(!(args[0] instanceof Cons)) {
-		throw new InterpreterException(_bad_type,
-					       args[0].typeId(),
-					       args[1].typeId());
-	    }
-
-	    List<CronoType> list = ((Cons)args[0]).toList();
-	    for(CronoType item : list) {
-		if(!(item instanceof Symbol)) {
-		    throw new InterpreterException(_bad_arg,item.typeId());
-		}
-	    }
-
-	    Symbol[] arglist = new Symbol[list.size()];
-	    CronoType[] body;
-	    List<CronoType> blist = new LinkedList<CronoType>();
-	    for(int i = 1; i < args.length; ++i) {
-		blist.add(args[i]);
-	    }
-	    body = new CronoType[blist.size()];
-	    body = blist.toArray(body);
-	    return new LambdaFunction(list.toArray(arglist), body,
-				      v.getEnv());
-	}
-	public String toString() {
-	    return "\\";
-	}
     }),
     EQ(new Function(new TypeId[]{CronoType.TYPEID, CronoType.TYPEID},
             Cons.TYPEID, 2)
