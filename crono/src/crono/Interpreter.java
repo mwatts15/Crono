@@ -80,8 +80,8 @@ public class Interpreter extends Visitor {
 		System.out.printf("%sAST: List Node\n", indent);
 	    }
 	    if(trace) {
-		System.out.printf(_trace_visit, indent, c);
-		System.out.printf(_trace_result, indent, c);
+		System.out.printf(_trace_visit, indent, c.repr());
+		System.out.printf(_trace_result, indent, c.repr());
 	    }
 	    if(showEnv) {
 		System.out.printf(_env_show, indent, getEnv());
@@ -108,7 +108,7 @@ public class Interpreter extends Visitor {
 	    System.out.printf("%sAST: Function Application Node\n", indent);
 	}
 	if(trace) {
-	    System.out.printf(_trace_visit, indent, c);
+	    System.out.printf(_trace_visit, indent, c.repr());
 	}
 	indent();
 	boolean treserve = trace, preserve = printast, ereserve = showEnv;
@@ -140,7 +140,7 @@ public class Interpreter extends Visitor {
 		     * function to return it properly. */
 		    deindent();
 		    if(trace) {
-			System.out.printf(_trace_result, indent, fun);
+			System.out.printf(_trace_result, indent, fun.repr());
 		    }
 		    if(showEnv) {
 			System.out.printf(_env_show, indent, getEnv());
@@ -194,7 +194,7 @@ public class Interpreter extends Visitor {
 					       lfun.environment);
 		    deindent();
 		    if(trace) {
-			System.out.printf(_trace_result, indent, clfun);
+			System.out.printf(_trace_result, indent, clfun.repr());
 		    }
 		    if(showEnv) {
 			System.out.printf(_env_show, indent, getEnv());
@@ -225,7 +225,7 @@ public class Interpreter extends Visitor {
 					   getEnv());
 		deindent();
 		if(trace) {
-		    System.out.printf(_trace_result, indent, blfun);
+		    System.out.printf(_trace_result, indent, blfun.repr());
 		}
 		if(showEnv) {
 		    System.out.printf(_env_show, indent, getEnv());
@@ -234,6 +234,7 @@ public class Interpreter extends Visitor {
 		return blfun;
 	    }
 	    if(arglen > nargs && !fun.variadic) {
+		eval = reserve;
 		throw new InterpreterException(_too_many_args, fun, arglen,
 					       nargs);
 	    }
@@ -253,7 +254,7 @@ public class Interpreter extends Visitor {
 		trace = treserve; printast = preserve; showEnv = ereserve;
 		deindent();
 		if(trace) {
-		    System.out.printf(_trace_result, indent, lresult);
+		    System.out.printf(_trace_result, indent, lresult.repr());
 		}
 		if(showEnv) {
 		    System.out.printf(_env_show, indent, getEnv());
@@ -282,7 +283,7 @@ public class Interpreter extends Visitor {
 		trace = treserve; printast = preserve; showEnv = ereserve;
 		deindent();
 		if(trace) {
-		    System.out.printf(_trace_result, indent, fresult);
+		    System.out.printf(_trace_result, indent, fresult.repr());
 		}
 		
 		if(showEnv) {
@@ -320,11 +321,11 @@ public class Interpreter extends Visitor {
 			      a.typeId());
 	}
 	if(trace) {
-	    System.out.printf(_trace_visit, indent, a);
+	    System.out.printf(_trace_visit, indent, a.repr());
 	}
 	if(eval == Function.EvalType.NONE) {
 	    if(trace) {
-		System.out.printf(_trace_result, indent, a);
+		System.out.printf(_trace_result, indent, a.repr());
 	    }
 	    return a;
 	}
@@ -334,8 +335,7 @@ public class Interpreter extends Visitor {
 	    t = getEnv().get((Symbol)a);
 	    if(t == null) {
 		if(eval == Function.EvalType.FULL) {
-		    throw new RuntimeException(String.format(_scope_err,
-							     a.toString()));
+		    throw new InterpreterException(_scope_err, a.repr());
 		}
 		t = a;
 	    }
@@ -353,7 +353,7 @@ public class Interpreter extends Visitor {
 	    }
 	}
 	if(trace) {
-	    System.out.printf(_trace_result, indent, t);
+	    System.out.printf(_trace_result, indent, t.repr());
 	}
 	return t;
     }
@@ -363,7 +363,7 @@ public class Interpreter extends Visitor {
 	    System.out.printf("%sAST: Quote Node\n");
 	}
 	if(trace) {
-	    System.out.printf(_trace_visit, indent, q);
+	    System.out.printf(_trace_visit, indent, q.repr());
 	}
 	
 	EvalType reserve = eval;
@@ -372,7 +372,7 @@ public class Interpreter extends Visitor {
 	eval = reserve;
 	
 	if(trace) {
-	    System.out.printf(_trace_result, indent, result);
+	    System.out.printf(_trace_result, indent, result.repr());
 	}
 	return result;
     }
