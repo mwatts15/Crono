@@ -3,9 +3,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 (define not (\ (bool) (if (= bool nil) #t #f)))
 
-(define and (\ (a b) (if a b nil)))
+(define and (\ (a b) (if a b #f)))
 
-(define or (\ (a b) (if a t b)))
+(define or (\ (a b) (if a #t b)))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % higher order functions
