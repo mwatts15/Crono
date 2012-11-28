@@ -26,97 +26,222 @@ public class Interpreter extends Visitor {
     private static final String _type_scope_err = "No type %s in scope";
     private static final String _type_mismatch =
 	"Function '%s' expected arguments %s; got %s";
+    private static final String _indent_level = "  ";
     
-    public boolean showEnv;
-    public boolean show_closure;
-    public boolean dprint_enable;
-    public boolean dprint_ident;
-    public boolean dynamic;
-    public boolean trace;
-    public boolean printast;
+    protected boolean showEnv, rShowEnv;
+    protected boolean showClosure, rShowClosure;
+    protected boolean dynamic, rDynamic;
+    protected boolean trace, rTrace;
+    protected boolean printAST, rPrintAST;
     
-    protected int indent_level;
-    protected Function.EvalType eval;
+    protected EvalType eval;
     protected StringBuilder indent;
+        
+    /**
+     * Creates a new Interpreter with default option values.
+     */
+    public Interpreter() {
+	showEnv(false);
+	showClosure(false);
+	dynamic(false);
+	trace(false);
+	printAST(false);
+	
+	indent = new StringBuilder();
+	eval = Function.EvalType.FULL;
+	
+	env_stack = new Stack<Environment>();
+	reset(); /*< Set up initial environment and types */
+    }
     
-    protected static final String _indent_level = "  ";
-    protected static final String _trace_visit = "%sVisiting %s\n";
-    protected static final String _trace_result = "%s  Result: %s\n";
-    protected static final String _env_show = "%sEnv: %s\n";
+    /**
+     * Turns environment reporting on or off.
+     * @param on If the Interpreter should report the contents of the
+     *           Environment.
+     */
+    public void showEnv(boolean on) {
+        showEnv = on;
+        rShowEnv = on;
+    }
+    /**
+     * Turns printing of closures on or off.
+     * Not currently implemented.
+     * @param on If closures should be shown.
+     */
+    public void showClosure(boolean on) {
+        showClosure = on;
+        rShowClosure = on;
+    }
+    /**
+     * Turns dynamic scoping on or off.
+     * TODO: add a description of dynamic scoping.
+     */
+    public void dynamic(boolean on) {
+        dynamic = on;
+        rDynamic = on;
+    }
+    /**
+     * Turns operation tracing on or off.
+     * @param on If the interpreter should perform operation tracing.
+     */
+    public void trace(boolean on) {
+        trace = on;
+        rTrace = on;
+    }
+    /**
+     * Turn AST printing on or off.
+     * @param on If the Interpreter should print the AST node it is at.
+     */
+    public void printAST(boolean on) {
+        printAST = on;
+        rPrintAST = on;
+    }
     
+    /**
+     * Helper method to indent correctly.
+     */
     protected void indent() {
 	indent.append(_indent_level);
     }
+    /**
+     * Helper method to de-indent correctly.
+     */
     protected void deindent() {
 	int size = indent.length();
 	indent.deleteCharAt(size - 1);
 	indent.deleteCharAt(size - 2);
     }
     
-    public Interpreter() {
-	showEnv = false;
-	show_closure = false;
-	dprint_enable = false;
-	dprint_ident = true;
-	dynamic = false;
-	trace = false;
-	printast = false;
-	
-	indent = new StringBuilder();
-	indent_level = 0;
-	eval = Function.EvalType.FULL;
-	
-	env_stack = new Stack<Environment>();
-	reset(); /*< Set up initial environment and types */
+    /**
+     * Resets interpreter state to it's default state.
+     */
+    protected void resetOptions() {
+        /* Restore defaults that may have been changed */
+        showEnv = rShowEnv;
+        showClosure = rShowClosure;
+        dynamic = rDynamic;
+        trace = rTrace;
+        printAST = rPrintAST;
     }
+    /**
+     * Turns off all options that only affect information that is printed.
+     */
+    protected void optionsOff() {
+        showEnv = false;
+        showClosure = false;
+        trace = false;
+        printAST = false;
+    }
+    
+    /**
+     * Prints the trace notification of a node visit.
+     * This function only prints a trace if the Interpreter.trace(boolean)
+     * method was called with a value of true.
+     * @param node The node that is being visited.
+     */
+    protected void traceVisit(CronoType node) {
+        if(trace) {
+            System.out.printf("%sVisiting %s", indent, node.repr());
+        }
+    }
+    /**
+     * Prints the trace results of evaluating a node.
+     * This function only prints a trace if the Interpreter.trace(boolean)
+     * method was called with a value of true.
+     * @param result The results to report
+     */
+    protected void traceResult(CronoType result) {
+        if(trace) {
+            System.out.printf("%sResult: %s\n", indent, result.repr());
+        }
+    }
+    /**
+     * Prints out a message that a node was visited on the AST.
+     * This function only prints a trace if the Interpreter.printAST(boolean)
+     * method was called with a value of true.
+     * @param nodeName The name of the node type that is being visited.
+     */
+    protected void printASTNode(String nodeName) {
+        if(printAST) {
+            System.out.printf("%sAST: %s\n", indent, nodeName);
+        }
+    }
+    protected void printEnvironment() {
+        if(showEnv) {
+            System.out.printf("%sEnv: %s\n", indent, getEnv());
+        }
+    }
+    
+    /**
+     * On exceptions, instead of throwing and forgetting, it should call except
+     * to reset the evaluation level, reset all options and then throw. This
+     * ensures that the interpreter doesn't get into an invalid state.
+     */
+    protected void except(RuntimeException e) {
+        resetOptions();
+        eval = EvalType.FULL;
+        indent = new StringBuilder();
+        throw e;
+    }
+    
+    /**
+     * Resets the Interpreter to it's default state, including the environment.
+     */
     public void reset() {
 	env_stack.clear();
 	pushEnv(new Environment());
+        resetOptions();
     }
     
+    /**
+     * Visit a cons node.
+     * There are a few cases the interpreter has to deal with:
+     *   1. The evaluation type is set to NONE:
+     *      * The node is a 'list', and is processed by the sub-node in some
+     *      * interpreter unknown way.
+     *   2. The node is Nil:
+     *      * Return Nil
+     *   3. The node is a function application:
+     *      a. The evaluation type is PARTIAL:
+     *         * Perform name substitution by visiting all sub nodes.
+     *      b. The evaluation type is FULL:
+     *         * Number of arguments statisfys the function requirments:
+     *            * Run the function
+     *         * Number of arguments is less than required:
+     *            * Curry the function
+     *         * Too many arguments:
+     *            * Throw an exception
+     * The Nil case could be seperated out by giving Nil.java an accept method,
+     * and adding a visit method to Visitor.java and Interpreter.java.
+     * @param c The Cons node to visit.
+     * @return The value obtained by visiting this node.
+     */
     public CronoType visit(Cons c) {
-	if(eval == Function.EvalType.NONE) {
-	    if(printast) {
-		System.out.printf("%sAST: List Node\n", indent);
-	    }
-	    if(trace) {
-		System.out.printf(_trace_visit, indent, c.repr());
-		System.out.printf(_trace_result, indent, c.repr());
-	    }
-	    if(showEnv) {
-		System.out.printf(_env_show, indent, getEnv());
-	    }
+	if(eval == EvalType.NONE) {
+            printASTNode("List Node");
+            traceVisit(c);
+            traceResult(c);
+            printEnvironment();
 	    return c;
 	}
 	
 	Iterator<CronoType> iter = c.iterator();
 	if(!(iter.hasNext())) {
-	    if(printast) {
-		System.out.printf("%sAST: Nil Node\n", indent);
-	    }
-	    if(trace) {
-		System.out.printf(_trace_visit, indent, "Nil");
-		System.out.printf(_trace_result, indent, "Nil");
-	    }
-	    if(showEnv) {
-		System.out.printf(_env_show, indent, getEnv());
-	    }
+            printASTNode("Nil Node");
+            traceVisit(Nil.NIL);
+            traceResult(Nil.NIL);
+            printEnvironment();
 	    return c; /*< C is an empty list (may be Nil or T) */
 	}
 	
-	if(printast) {
-	    System.out.printf("%sAST: Function Application Node\n", indent);
-	}
-	if(trace) {
-	    System.out.printf(_trace_visit, indent, c.repr());
-	}
+        printASTNode("Function Application Node");
+        traceVisit(c);
 	indent();
-	boolean treserve = trace, preserve = printast, ereserve = showEnv;
 	CronoType value = iter.next().accept(this);
 	if(value instanceof Function) {
 	    Function fun = ((Function)value);
 	    
-	    Function.EvalType reserve = eval;
+	    EvalType reserve = eval;
 	    /* Set the eval type to the current function's type; this keeps
 	     * type errors in builtins from happening, ex:
 	     * (+ arg1 arg2) under partial evaluation would fail since +
@@ -139,12 +264,8 @@ public class Interpreter extends Visitor {
 		    /* Special case -- we don't have to do anything to the
 		     * function to return it properly. */
 		    deindent();
-		    if(trace) {
-			System.out.printf(_trace_result, indent, fun.repr());
-		    }
-		    if(showEnv) {
-			System.out.printf(_env_show, indent, getEnv());
-		    }
+                    traceResult(fun);
+                    printEnvironment();
 		    return fun;
 		}
 		
@@ -173,19 +294,19 @@ public class Interpreter extends Visitor {
 		    
 		    /* Evaluate the body as much as possible */
 		    reserve = eval;
-		    trace = false;
-		    printast = false;
-		    eval = Function.EvalType.PARTIAL;
-		    pushEnv(env);
-		    CronoType[] lbody = new CronoType[lfun.body.length];
-		    for(int i = 0; i < lfun.body.length; ++i) {
-			lbody[i] = lfun.body[i].accept(this);
-		    }
-		    popEnv();
-		    eval = reserve;
-		    trace = treserve;
-		    printast = preserve;
-		    
+                    
+                    CronoType[] lbody = new CronoType[lfun.body.length];
+                    optionsOff(); /*< Extra indent for clarity */
+                    {
+                        eval = EvalType.PARTIAL;
+                        pushEnv(env);
+                        for(int i = 0; i < lfun.body.length; ++i) {
+                            lbody[i] = lfun.body[i].accept(this);
+                        }
+                        popEnv();
+                    }
+                    resetOptions(); /*< Set options back to what they were */
+                    
 		    /* Return the new, partially evaluated lambda */
 		    Symbol[] arglist = new Symbol[largs.size()];
 		    
@@ -193,13 +314,9 @@ public class Interpreter extends Visitor {
 		    clfun = new LambdaFunction(largs.toArray(arglist), lbody,
 					       lfun.environment);
 		    deindent();
-		    if(trace) {
-			System.out.printf(_trace_result, indent, clfun.repr());
-		    }
-		    if(showEnv) {
-			System.out.printf(_env_show, indent, getEnv());
-		    }
-		    
+                    traceResult(clfun);
+                    printEnvironment();
+                    
 		    return clfun;
 		}
 		/* Builtin partial evaluation */
@@ -224,19 +341,15 @@ public class Interpreter extends Visitor {
 		blfun = new LambdaFunction(arglist.toArray(narglist), barr,
 					   getEnv());
 		deindent();
-		if(trace) {
-		    System.out.printf(_trace_result, indent, blfun.repr());
-		}
-		if(showEnv) {
-		    System.out.printf(_env_show, indent, getEnv());
-		}
-		
+                traceResult(blfun);
+                printEnvironment();
+                
 		return blfun;
 	    }
 	    if(arglen > nargs && !fun.variadic) {
 		eval = reserve;
-		throw new InterpreterException(_too_many_args, fun, arglen,
-					       nargs);
+		except(new InterpreterException(_too_many_args, fun, arglen,
+                                                nargs));
 	    }
 	    
 	    /* Full evaluation */
@@ -249,17 +362,14 @@ public class Interpreter extends Visitor {
 		
 		CronoType[] argarray = new CronoType[args.size()];
 		
-		trace = false; printast = false; showEnv = false;
+                optionsOff();
 		CronoType lresult = lfun.run(this, args.toArray(argarray));
-		trace = treserve; printast = preserve; showEnv = ereserve;
+                resetOptions();
+                
 		deindent();
-		if(trace) {
-		    System.out.printf(_trace_result, indent, lresult.repr());
-		}
-		if(showEnv) {
-		    System.out.printf(_env_show, indent, getEnv());
-		}
-		
+                traceResult(lresult);
+                printEnvironment();
+                
 		return lresult;
 	    }
 	    if(eval == Function.EvalType.FULL) {
@@ -273,60 +383,56 @@ public class Interpreter extends Visitor {
 		    if(!(fun.args[i].isType(argarray[i]))) {
 			String argstr = Arrays.toString(types);
 			String expected = Arrays.toString(fun.args);
-			throw new InterpreterException(_type_mismatch, fun,
-						       expected, argstr);
+			except(new InterpreterException(_type_mismatch, fun,
+                                                        expected, argstr));
 		    }
 		}
-		trace = false; printast = false; showEnv = false;
+                
+                optionsOff();
 		CronoType fresult;
 		fresult = ((Function)value).run(this, args.toArray(argarray));
-		trace = treserve; printast = preserve; showEnv = ereserve;
+                resetOptions();
+                
 		deindent();
-		if(trace) {
-		    System.out.printf(_trace_result, indent, fresult.repr());
-		}
-		
-		if(showEnv) {
-		    System.out.printf(_env_show, indent, getEnv());
-		}
-		
+                traceResult(fresult);
+                printEnvironment();
+                
 		return fresult;
 	    }else {
 		args.add(0, value);
 		deindent();
-		if(showEnv) {
-		    System.out.printf(_env_show, indent, getEnv());
-		}
+                Cons cresult = Cons.fromList(args);
+                traceResult(cresult);
+                printEnvironment();
 		
-		return Cons.fromList(args);
+		return cresult;
 	    }
 	}
 	deindent();
-	
-	/* The initial value is not a function */
-	throw new InterpreterException("Invalid Function Application: %s is not a function in %s", value, c);
-	/*
-	List<CronoType> list = new LinkedList<CronoType>();
-	list.add(value);
-	while(iter.hasNext()) {
-	    list.add(iter.next().accept(this));
-	}
-	return Cons.fromList(list);
-	*/
+        /* The initial value is not a function */
+	except(new InterpreterException("Invalid Function Application: %s is not a function in %s", value, c));
+        return null;
     }
     
+    /**
+     * Visits an atom node.
+     * The results of this method depend on the current evaluation type of the
+     * Interpreter.
+     *   1. NONE:
+     *      * Return the atom without doing anything.
+     *   2. PARTIAL of FULL:
+     *      * If the atom is a symbol, do name resolution based on the current
+     *        environment.
+     *      * If the atom is a type, or was resolved to a type, do type
+     *        resolution.
+     * @param a The atom to visit
+     * @return The value obtained by visiting this node.
+     */
     public CronoType visit(Atom a) {
-	if(printast) {
-	    System.out.printf("%sAST: Atom Node -> %s[%s]\n", indent, a,
-			      a.typeId());
-	}
-	if(trace) {
-	    System.out.printf(_trace_visit, indent, a.repr());
-	}
-	if(eval == Function.EvalType.NONE) {
-	    if(trace) {
-		System.out.printf(_trace_result, indent, a.repr());
-	    }
+        printASTNode(String.format("Atom Node -> %s[%s]\n", a, a.typeId()));
+        traceVisit(a);
+	if(eval == EvalType.NONE) {
+            traceResult(a);
 	    return a;
 	}
 	
@@ -334,8 +440,8 @@ public class Interpreter extends Visitor {
 	if(t instanceof Symbol) {
 	    t = getEnv().get((Symbol)a);
 	    if(t == null) {
-		if(eval == Function.EvalType.FULL) {
-		    throw new InterpreterException(_scope_err, a.repr());
+		if(eval == EvalType.FULL) {
+		    except(new InterpreterException(_scope_err, a.repr()));
 		}
 		t = a;
 	    }
@@ -343,37 +449,36 @@ public class Interpreter extends Visitor {
 	/* Not else-if, so that we perform a double-resolution on a symbol that
 	 * represents a TypeId */
 	if(t instanceof CronoTypeId) {
-	    CronoType res = t; /*< Save symbol resolution in new CronoType */
+	    CronoType res = t; /*< Save symbol resolution */
 	    t = getEnv().getType((CronoTypeId)t);
 	    if(t == null) {
-		if(eval == Function.EvalType.FULL) {
-		    throw new InterpreterException(_type_scope_err, a);
+		if(eval == EvalType.FULL) {
+		    except(new InterpreterException(_type_scope_err, a));
 		}
 		t = res; /*< Revert to symbol resolution */
 	    }
 	}
-	if(trace) {
-	    System.out.printf(_trace_result, indent, t.repr());
-	}
+        traceResult(t); /* We don't need to show the environment after atoms */
 	return t;
     }
     
+    /**
+     * Visits a quote node.
+     * Quote nodes simply return the value obtained by visiting their sub-node
+     * with a forced eval-type of NONE.
+     * @param q The quote node to visit.
+     * @return The node below this unchanged.
+     */
     public CronoType visit(Quote q) {
-	if(printast) {
-	    System.out.printf("%sAST: Quote Node\n");
-	}
-	if(trace) {
-	    System.out.printf(_trace_visit, indent, q.repr());
-	}
-	
+        printASTNode("Quote Node");
+        traceVisit(q);
+        
 	EvalType reserve = eval;
 	eval = EvalType.NONE;
 	CronoType result = q.node.accept(this);
 	eval = reserve;
 	
-	if(trace) {
-	    System.out.printf(_trace_result, indent, result.repr());
-	}
+        traceResult(result);
 	return result;
     }
 }

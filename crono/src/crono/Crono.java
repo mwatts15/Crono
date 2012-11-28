@@ -55,31 +55,35 @@ public class Crono {
 	while(opt != -1) {
 	    switch(opt) {
 	    case 'd':
-		interp.dynamic = true;
+		interp.dynamic(true);
 		break;
 	    case 'D':
-		interp.dprint_enable = false;
+                interp.showEnv(true);
+                interp.printAST(true);
+                interp.trace(true);
 		break;
 	    case 'e':
-		interp.showEnv = true;
+		interp.showEnv(true);
 		break;
 	    case 'h':
 		System.err.println(helpstr);
 		return;
 	    case 'p':
-		interp.printast = true;
+		interp.printAST(true);
 		break;
 	    case 'q':
-		interp.dprint_enable = false;
+                interp.showEnv(false);
+                interp.printAST(false);
+                interp.trace(false);
 		break;
 	    case 's':
-		interp.dynamic = false;
+		interp.dynamic(false);
 		break;
 	    case 't':
 		interp.getEnv().show_types = true;
 		break;
 	    case 'T':
-		interp.trace = true;
+		interp.trace(true);
 		break;
 	    case '?':
 	    default:
