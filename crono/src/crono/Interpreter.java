@@ -206,10 +206,7 @@ public class Interpreter extends Visitor {
 		
 		List<CronoType> body = new LinkedList<CronoType>();
 		body.add(fun);
-		
 		body.addAll(args); /*< Dump args in order into the new cons */
-		CronoType[] barr = new CronoType[body.size()];
-		barr = body.toArray(barr);
 		
 		/* Add symbols for missing args */
 		List<Symbol> arglist = new ArrayList<Symbol>();
@@ -223,6 +220,7 @@ public class Interpreter extends Visitor {
 		/* Create a new lambda */
 		Symbol[] narglist = new Symbol[arglist.size()];
 		LambdaFunction blfun;
+		CronoType[] barr = new CronoType[] {Cons.fromList(body)};
 		blfun = new LambdaFunction(arglist.toArray(narglist), barr,
 					   getEnv());
 		deindent();
