@@ -280,6 +280,81 @@ public enum CronoFunction {
 	    return "let";
 	}
     }),
+    LETREC(new Function(new TypeId[]{Cons.TYPEID, CronoType.TYPEID},
+			CronoType.TYPEID, 2, true, EvalType.NONE)
+    {
+	private static final String _subst_list_type =
+	    "letrec: substitution list must be :cons, got %s";
+	private static final String _subst_not_cons =
+	    "letrec: expected :cons in substitution list, got %s";
+	private static final String _subst_not_sym = 
+	    "letrec: argument names numst be :symbol, got %s";
+	
+	public CronoType run(Visitor v, CronoType[] args) {
+	    if(!(args[0] instanceof Cons)) {
+		throw new InterpreterException(_subst_list_type,
+					       args[0].typeId());
+	    }
+	    
+	    List<Symbol> symlist = new LinkedList<Symbol>();
+	    List<CronoType> arglist = new LinkedList<CronoType>();
+	    for(CronoType ct : ((Cons)args[0])) {
+		if(!(ct instanceof Cons)) {
+		    throw new InterpreterException(_subst_not_cons,
+						   ct.typeId());
+		}
+		
+		CronoType car = ((Cons)ct).car();
+		CronoType cdr = ((Cons)ct).cdr();
+		if(!(car instanceof Symbol)) {
+		    throw new InterpreterException(_subst_not_sym,
+						   car.typeId());
+		}
+		
+		cdr = cdr.accept(v);
+		symlist.add((Symbol)car);
+		arglist.add(cdr);
+		
+		if(cdr instanceof LambdaFunction) {
+		    LambdaFunction lfun = ((LambdaFunction)cdr);
+		    lfun.environment.put((Symbol)car, cdr);
+		}
+	    }
+	    
+	    Symbol[] lsyms = new Symbol[symlist.size()];
+	    lsyms = symlist.toArray(lsyms);
+	    
+	    List<CronoType> bodylist = new LinkedList<CronoType>();
+	    for(int i = 1; i < args.length; ++i) {
+		bodylist.add(args[i]);
+	    }
+	    CronoType[] body = new CronoType[bodylist.size()];
+	    body = bodylist.toArray(body);
+	    
+	    CronoType[] largs = new CronoType[arglist.size()];
+	    largs = arglist.toArray(largs);
+	    
+	    LambdaFunction lambda = new LambdaFunction(lsyms,body,v.getEnv());
+	    return lambda.run(v, largs); /*< -. - */
+	}
+	public String toString() {
+	    return "letrec";
+	}
+    }),
+    WHILE(new Function(new TypeId[]{CronoType.TYPEID, CronoType.TYPEID},
+		       CronoType.TYPEID, 2, EvalType.NONE)
+    {
+	public CronoType run(Visitor v, CronoType[] args) {
+	    CronoType result = Nil.NIL;
+	    while((args[0].accept(v)) != Nil.NIL) {
+		result = args[1].accept(v);
+	    }
+	    return result;
+	}
+	public String toString() {
+	    return "while";
+	}
+    }),
     IF(new Function(new TypeId[]{CronoType.TYPEID, CronoType.TYPEID,
 				 CronoType.TYPEID},
 	    CronoType.TYPEID, 3, EvalType.NONE)
