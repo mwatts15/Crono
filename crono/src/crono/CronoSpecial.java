@@ -13,10 +13,10 @@ public enum CronoSpecial {
     LAMBDA(new Special(new TypeId[]{Cons.TYPEID, CronoType.TYPEID},
             Function.TYPEID, 2, true, EvalType.NONE)
     {
-            private static final String _bad_type =
-                "\\: expected :cons :any, got %s, %s";
-            private static final String _bad_arg =
-                "\\: arguments must be :symbol, got %s";
+        private static final String _bad_type =
+            "\\: expected :cons :any, got %s, %s";
+        private static final String _bad_arg =
+            "\\: arguments must be :symbol, got %s";
         public CronoType run(Visitor v, List<CronoType> args) {
                 if(!(args.get(0) instanceof Cons)) {
                     throw new InterpreterException(_bad_type,
@@ -48,25 +48,25 @@ public enum CronoSpecial {
             public String toString() {
                 return "\\";
             }
-    });
-    //DEFINE(new Function(new TypeId[]{Symbol.TYPEID, CronoType.TYPEID},
-			//CronoType.TYPEID, 2, EvalType.NONE)
-    //{
-	//private static final String _bad_type =
-		//"DEFINE: expected :symbol, got %s";
+    }),
+    DEFINE(new Special(new TypeId[]{Symbol.TYPEID, CronoType.TYPEID},
+            CronoType.TYPEID, 2, EvalType.NONE)
+    {
+    private static final String _bad_type =
+        "DEFINE: expected :symbol, got %s";
 
-	//public CronoType run(Visitor v, CronoType[]args) {
-		//if(!(args[0] instanceof Symbol)) {
-		//throw new InterpreterException(_bad_type, args[0].typeId());
-		//}
-		//CronoType value = args[1].accept(v);
-		//v.getEnv().put(((Symbol)args[0]), value);
-		//return value;
-	//}
-	//public String toString() {
-		//return "define";
-	//}
-    //}),
+    public CronoType run(Visitor v, List<CronoType> args) {
+        if(!(args.get(0) instanceof Symbol)) {
+            throw new InterpreterException(_bad_type, args.get(0).typeId());
+        }
+        CronoType value = args.get(1).accept(v);
+        v.getEnv().put(((Symbol)args.get(0)), value);
+        return value;
+    }
+    public String toString() {
+        return "define";
+    }
+    }),
     //UNDEFINE(new Function(new TypeId[]{Symbol.TYPEID}, Nil.TYPEID, 1,
 			  //EvalType.NONE)
     //{
@@ -168,6 +168,7 @@ public enum CronoSpecial {
 		//return "if";
 	//}
     //}),
+    ;
     public final Special special;
     private CronoSpecial(Special spec) {
         this.special = spec;

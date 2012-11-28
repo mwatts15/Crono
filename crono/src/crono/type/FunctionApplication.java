@@ -124,7 +124,7 @@ public class FunctionApplication extends CronoType
                  * i.e. fa.accept rather than fa.apply?
                  * leaving it accept for now
                  */
-                 return fa.accept(v);
+                 return fa.apply(v);
             }
             else
             {

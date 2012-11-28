@@ -50,25 +50,28 @@ public class Interpreter2 extends Visitor
                  * up, since we don't want to visit the head
                  * twice
                  */
-                CronoType t = getEnv().get(s);
-                if (t instanceof Special)
+                if (s.isCombinator())
                 {
-                    SpecialForm sf = new SpecialForm(c);
-                    /* If we wanted only to create an AST,
-                     * we would stop here.
-                     * However, we create the nodes and
-                     * evaluate on the fly
-                     */
-                    result = sf.reduce(this);
+                    CombinatorApplication ca = new CombinatorApplication(c);
+                    result = ca.reduce(this);
                 }
                 else
                 {
-                    FunctionApplication fa = new FunctionApplication(c);
-                    result = fa.apply(this);
+                    CronoType t = getEnv().get(s);
+                    if (t instanceof Special)
+                    {
+                        SpecialForm sf = new SpecialForm(c);
+                        /* If we wanted only to create an AST,
+                         * we would stop here.
+                         * However, we create the nodes and
+                         * evaluate on the fly
+                         */
+                        result = sf.reduce(this);
+                    }
                 }
-                /* TODO: add a combinator case */
             }
-            else
+
+            if (result == null)
             {
                 /*
                  * We assume function application by default
