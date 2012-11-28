@@ -15,6 +15,7 @@ public class Crono {
     public static final Option[] options = {
 	new Option('d', "dynamic"),
 	new Option('D', "debug"),
+	new Option('e', "show-environment"),
 	new Option('h', "help"),
 	new Option('p', "print-ast"),
 	new Option('q', "quiet"),
@@ -52,13 +53,15 @@ public class Crono {
 	
 	int opt = optparse.getopt(options);
 	while(opt != -1) {
-	    System.err.printf("OptionParser: got %d(%c)\n", opt, (char)opt);
 	    switch(opt) {
 	    case 'd':
 		interp.dynamic = true;
 		break;
 	    case 'D':
 		interp.dprint_enable = false;
+		break;
+	    case 'e':
+		interp.showEnv = true;
 		break;
 	    case 'h':
 		System.err.println(helpstr);
@@ -103,8 +106,6 @@ public class Crono {
 	if(interactive && files.size() == 0) {
 	    parser = new Parser(new InputStreamReader(System.in));
 	    System.out.println(introstr);
-	    
-	    System.out.printf("Environment:\n%s\n", interp.env_stack.peek());
 	    
 	    boolean good = false;
 	    CronoType statement = getStatement(parser);

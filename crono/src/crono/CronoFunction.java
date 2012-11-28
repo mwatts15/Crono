@@ -638,7 +638,13 @@ public enum CronoFunction {
 	    }catch(ParseException pe) {
 		throw new InterpreterException(_bad_parse, pe.getMessage());
 	    }
-	    return program.accept(v);
+	    if(!(program instanceof Cons)) {
+		return TruthValue.T;
+	    }
+	    for(CronoType item : (Cons)program) {
+		item.accept(v);
+	    }
+	    return TruthValue.T;
 	}
 	private CronoType loadPackage(Visitor v, String fname) {
 	    CronoPackage pack = CronoPackage.load(fname);
@@ -672,7 +678,7 @@ public enum CronoFunction {
 	    }
 	    String fname = ((CronoString)args[0]).toString();
 	    String lname = fname.toLowerCase();
-	    if(lname.endsWith(".lisp") || lname.endsWith(".crono")) {
+	    if(lname.matches("[^\\n\\r]*\\.[^\\n\\r]*")) {
 		return loadLisp(v, fname);
 	    }
 	    return loadPackage(v, fname);

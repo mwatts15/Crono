@@ -27,7 +27,7 @@ public class Interpreter extends Visitor {
     private static final String _type_mismatch =
 	"Function '%s' expected arguments %s; got %s";
     
-    public boolean show_env;
+    public boolean showEnv;
     public boolean show_closure;
     public boolean dprint_enable;
     public boolean dprint_ident;
@@ -42,6 +42,7 @@ public class Interpreter extends Visitor {
     protected static final String _indent_level = "  ";
     protected static final String _trace_visit = "%sVisiting %s\n";
     protected static final String _trace_result = "%s  Result: %s\n";
+    protected static final String _env_show = "%sEnv: %s\n";
     
     protected void indent() {
 	indent.append(_indent_level);
@@ -53,7 +54,7 @@ public class Interpreter extends Visitor {
     }
     
     public Interpreter() {
-	show_env = false;
+	showEnv = false;
 	show_closure = false;
 	dprint_enable = false;
 	dprint_ident = true;
@@ -82,6 +83,9 @@ public class Interpreter extends Visitor {
 		System.out.printf(_trace_visit, indent, c);
 		System.out.printf(_trace_result, indent, c);
 	    }
+	    if(showEnv) {
+		System.out.printf(_env_show, indent, getEnv());
+	    }
 	    return c;
 	}
 	
@@ -94,6 +98,9 @@ public class Interpreter extends Visitor {
 		System.out.printf(_trace_visit, indent, "Nil");
 		System.out.printf(_trace_result, indent, "Nil");
 	    }
+	    if(showEnv) {
+		System.out.printf(_env_show, indent, getEnv());
+	    }
 	    return c; /*< C is an empty list (may be Nil or T) */
 	}
 	
@@ -104,7 +111,7 @@ public class Interpreter extends Visitor {
 	    System.out.printf(_trace_visit, indent, c);
 	}
 	indent();
-	boolean treserve = trace, preserve = printast;
+	boolean treserve = trace, preserve = printast, ereserve = showEnv;
 	CronoType value = iter.next().accept(this);
 	if(value instanceof Function) {
 	    Function fun = ((Function)value);
@@ -134,6 +141,9 @@ public class Interpreter extends Visitor {
 		    deindent();
 		    if(trace) {
 			System.out.printf(_trace_result, indent, fun);
+		    }
+		    if(showEnv) {
+			System.out.printf(_env_show, indent, getEnv());
 		    }
 		    return fun;
 		}
@@ -186,6 +196,10 @@ public class Interpreter extends Visitor {
 		    if(trace) {
 			System.out.printf(_trace_result, indent, clfun);
 		    }
+		    if(showEnv) {
+			System.out.printf(_env_show, indent, getEnv());
+		    }
+		    
 		    return clfun;
 		}
 		/* Builtin partial evaluation */
@@ -215,12 +229,15 @@ public class Interpreter extends Visitor {
 		if(trace) {
 		    System.out.printf(_trace_result, indent, blfun);
 		}
+		if(showEnv) {
+		    System.out.printf(_env_show, indent, getEnv());
+		}
 		
 		return blfun;
 	    }
 	    if(arglen > nargs && !fun.variadic) {
-		throw new RuntimeException(String.format(_too_many_args, fun,
-							 arglen, nargs));
+		throw new InterpreterException(_too_many_args, fun, arglen,
+					       nargs);
 	    }
 	    
 	    /* Full evaluation */
@@ -233,13 +250,17 @@ public class Interpreter extends Visitor {
 		
 		CronoType[] argarray = new CronoType[args.size()];
 		
-		trace = false; printast = false;
+		trace = false; printast = false; showEnv = false;
 		CronoType lresult = lfun.run(this, args.toArray(argarray));
-		trace = treserve; printast = preserve;
+		trace = treserve; printast = preserve; showEnv = ereserve;
 		deindent();
 		if(trace) {
 		    System.out.printf(_trace_result, indent, lresult);
 		}
+		if(showEnv) {
+		    System.out.printf(_env_show, indent, getEnv());
+		}
+		
 		return lresult;
 	    }
 	    if(eval == Function.EvalType.FULL) {
@@ -257,21 +278,27 @@ public class Interpreter extends Visitor {
 						       expected, argstr);
 		    }
 		}
-		trace = false;
-		printast = false;
+		trace = false; printast = false; showEnv = false;
 		CronoType fresult;
 		fresult = ((Function)value).run(this, args.toArray(argarray));
-		trace = treserve;
-		printast = preserve;
+		trace = treserve; printast = preserve; showEnv = ereserve;
 		deindent();
 		if(trace) {
 		    System.out.printf(_trace_result, indent, fresult);
+		}
+		
+		if(showEnv) {
+		    System.out.printf(_env_show, indent, getEnv());
 		}
 		
 		return fresult;
 	    }else {
 		args.add(0, value);
 		deindent();
+		if(showEnv) {
+		    System.out.printf(_env_show, indent, getEnv());
+		}
+		
 		return Cons.fromList(args);
 	    }
 	}

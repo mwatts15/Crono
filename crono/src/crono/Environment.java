@@ -3,6 +3,8 @@ package crono;
 import crono.type.CronoStruct;
 import crono.type.CronoType;
 import crono.type.CronoTypeId;
+import crono.type.Function;
+import crono.type.LambdaFunction;
 import crono.type.Symbol;
 import crono.type.TypeId;
 
@@ -28,7 +30,7 @@ public class Environment {
 	structs = new HashMap<String, CronoStruct>();
 	types = new HashMap<String, CronoTypeId>();
 	show_builtins = false;
-	multiline = true;
+	multiline = false;
 	show_types = false;
 	dirty = true; /*< dirty flag to rebuild string repr */
 	
@@ -108,6 +110,10 @@ public class Environment {
 	return symbols.entrySet().iterator();
     }
     
+    private boolean isBuiltin(CronoType item) {
+	return (item instanceof Function && !(item instanceof LambdaFunction));
+    }
+    
     public String toString() {
 	if(dirty) {
 	    StringBuilder result = new StringBuilder();
@@ -115,27 +121,48 @@ public class Environment {
 	    Map.Entry<String, CronoType> entry;
 	    String sym;
 	    CronoType val;
-	    boolean hasnext = iter.hasNext();
-	    while(hasnext) {
+	    boolean empty = true;
+	    while(iter.hasNext()) {
 		entry = iter.next();
 		sym = entry.getKey();
 		val = entry.getValue();
-		/* TODO: Check if the value is a builtin */
-		result.append(sym);
-		result.append(": ");
-		result.append(val.toString());
-		if(show_types) {
-		    result.append(" [");
-		    result.append(val.typeId().image);
-		    result.append("]");
-		}
-		hasnext = iter.hasNext();
-		if(hasnext) {
-		    result.append(multiline ? "\n" : ", ");
+		if(show_builtins || !isBuiltin(val)) {
+		    result.append("(let ((");
+		    result.append(sym);
+		    result.append(" ");
+		    result.append(val.repr());
+		    if(show_types) {
+			result.append(" ");
+			result.append(val.typeId());
+		    }
+		    result.append(")");
+		    empty = false;
+		    break;
 		}
 	    }
-	    
-	    repr = result.toString();
+	    while(iter.hasNext()) {
+		entry = iter.next();
+		sym = entry.getKey();
+		val = entry.getValue();
+		if(show_builtins || !isBuiltin(val)) {
+		    result.append(" (");
+		    result.append(sym);
+		    result.append(" ");
+		    result.append(val.repr());
+		    if(show_types) {
+			result.append(" ");
+			result.append(val.typeId());
+		    }
+		    result.append(")");
+		}
+	    }
+
+	    if(empty) {
+		repr = "empty";
+	    }else {
+		result.append(")");
+		repr = result.toString();
+	    }
 	    dirty = false;
 	}
 	return repr;
