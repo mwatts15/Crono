@@ -107,6 +107,28 @@ public enum CronoFunction {
 	    return "append";
 	}
     }),
+    INSERT(new Function(new TypeId[]{CronoArray.TYPEID, CronoInteger.TYPEID,
+				     CronoArray.TYPEID}, CronoArray.TYPEID, 3)
+    {
+	public CronoType run(Visitor v, CronoType[] args) {
+	    CronoArray dest = (CronoArray)args[0], src = (CronoArray)args[2];
+	    return dest.insert(src, (int)((CronoInteger)args[1]).value);
+	}
+	public String toString() {
+	    return "insert";
+	}
+    }),
+    CONCAT(new Function(new TypeId[]{CronoArray.TYPEID, CronoArray.TYPEID},
+			CronoArray.TYPEID, 2)
+    {
+	public CronoType run(Visitor v, CronoType[] args) {
+	    CronoArray dest = (CronoArray)args[0], src = (CronoArray)args[1];
+	    return dest.concat(src);
+	}
+	public String toString() {
+	    return "concat";
+	}
+    }),
     DEFINE(new Function(new TypeId[]{Symbol.TYPEID, CronoType.TYPEID},
 			CronoType.TYPEID, 2, EvalType.NONE)
     {

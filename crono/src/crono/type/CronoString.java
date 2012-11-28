@@ -11,6 +11,8 @@ public class CronoString extends CronoArray {
 	"String index out of bounds: %d > %d";
     private static final String _rank_mismatch =
 	"String rank mismatch: %d != %d";
+    private static final String _type_mismatch =
+	"%s: type mismatch; %s != :string";
     
     protected StringBuilder data;
     protected int size;
@@ -66,8 +68,23 @@ public class CronoString extends CronoArray {
 	data.append(((CronoCharacter)item).ch);
 	return item;
     }
+    public CronoType insert(CronoArray array, int pos) {
+	if(!(array instanceof CronoString)) {
+	    throw new InterpreterException(_type_mismatch, "insert",
+					   array.typeId());
+	}
+	data.insert(pos, ((CronoString)array).data);
+	return this;
+    }
     public CronoType concat(CronoArray array) {
-	return Nil.NIL;
+	if(!(array instanceof CronoString)) {
+	    throw new InterpreterException(_type_mismatch, "insert",
+					   array.typeId());
+	}
+	
+	data.append(((CronoString)array).data);
+	
+	return this;
     }
     
     public TypeId typeId() {

@@ -71,8 +71,23 @@ public class CronoVector extends CronoArray {
 	size++;
 	return item;
     }
+    public CronoType insert(CronoArray array, int pos) {
+	if(!(array instanceof CronoVector)) {
+	    throw new InterpreterException("insert: bleh");
+	}
+	
+	data.addAll(pos, ((CronoVector)array).data);
+	size = data.size();
+	return this;
+    }
     public CronoType concat(CronoArray array) {
-	return Nil.NIL;
+	if(!(array instanceof CronoVector)) {
+	    throw new InterpreterException("concat: bleh");
+	}
+	
+	data.addAll(((CronoVector)array).data);
+	size = data.size();
+	return this;
     }
     
     public TypeId typeId() {

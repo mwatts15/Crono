@@ -13,6 +13,7 @@ public abstract class CronoArray extends Atom {
     public abstract CronoType get(int n);
     public abstract CronoType put(int n, CronoType item);
     public abstract CronoType append(CronoType item);
+    public abstract CronoType insert(CronoArray array, int pos);
     public abstract CronoType concat(CronoArray array);
     
     public TypeId accept() {
