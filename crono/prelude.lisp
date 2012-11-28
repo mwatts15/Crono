@@ -18,7 +18,7 @@
 
 (defun _foldr (f l s) (if (= l nil) s (f (car l) (_foldr f (cdr l) s))))
 
-(defun foldr (\ (f l) (if (= l nil) nil (_foldr f (cdr l) (car l)))))
+(defun foldr (f l) (if (= l nil) nil (_foldr f (cdr l) (car l))))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % math functions
@@ -58,3 +58,6 @@
   (\ (x) (f (x x))) (\ (x) (f (x x))) ))
 
 (define <COND> (\ (p f g x) (if (p x) (f x) (g x))))
+
+(define prFoldr (\ (fn z x)
+ (<Y> (<B> (<COND> (= nil) (<K> z)) (<B> (<S> (<B> fn (car)) ) (<C> <B> cdr))) x)))
