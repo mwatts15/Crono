@@ -171,7 +171,7 @@ public class Interpreter extends Visitor {
      */
     protected void traceVisit(CronoType node) {
         if(trace) {
-            System.out.printf("%sVisiting %s", indent, node.repr());
+            System.out.printf("%sVisiting %s\n", indent, node.repr());
         }
     }
     /**
@@ -273,11 +273,7 @@ public class Interpreter extends Visitor {
 	    Function fun = ((Function)value);
 	    
 	    EvalType reserve = eval;
-	    /* Set the eval type to the current function's type; this keeps
-	     * type errors in builtins from happening, ex:
-	     * (+ arg1 arg2) under partial evaluation would fail since +
-	     * expects two numbers.
-	     */
+            
 	    eval = fun.eval;
 	    if(eval.level > reserve.level) {
 		eval = reserve;
@@ -309,7 +305,7 @@ public class Interpreter extends Visitor {
 			env = lfun.environment;
 		    }
 		    /* We want to preserve the current environment */
-		    env = new Environment(env);
+		    env = new Environment(false);
 		    
 		    /* Put known values into the new environment */
 		    for(int i = 0; i < arglen; ++i) {
@@ -334,6 +330,7 @@ public class Interpreter extends Visitor {
                         for(int i = 0; i < lfun.body.length; ++i) {
                             lbody[i] = lfun.body[i].accept(this);
                         }
+                        eval = reserve;
                         popEnv();
                     }
                     resetOptions(); /*< Set options back to what they were */
@@ -351,7 +348,6 @@ public class Interpreter extends Visitor {
 		    return clfun;
 		}
 		/* Builtin partial evaluation */
-		
 		List<CronoType> body = new LinkedList<CronoType>();
 		body.add(fun);
 		body.addAll(args); /*< Dump args in order into the new cons */
@@ -384,26 +380,27 @@ public class Interpreter extends Visitor {
 	    }
 	    
 	    /* Full evaluation */
-	    if(fun instanceof LambdaFunction && dynamic) {
-		/* We have to trick the lambda function if we want dynamic
-		 * scoping. I hate making so many objects left and right, but
-		 * this is the easiest way to do what I want here. */
-		LambdaFunction lfun = ((LambdaFunction)fun);
-		lfun = new LambdaFunction(lfun.arglist, lfun.body, getEnv());
-		
-		CronoType[] argarray = new CronoType[args.size()];
-		
-                optionsOff();
-		CronoType lresult = lfun.run(this, args.toArray(argarray));
-                resetOptions();
+	    if(eval == EvalType.FULL) {
+                if(fun instanceof LambdaFunction && dynamic) {
+                    /* We have to trick the lambda function if we want dynamic
+                     * scoping. I hate making so many objects left and right,
+                     * but this is the easiest way to do what I want here. */
+                    LambdaFunction lfun = ((LambdaFunction)fun);
+                    lfun = new LambdaFunction(lfun.arglist, lfun.body,
+                                              getEnv());
+                    CronoType[] argarray = new CronoType[args.size()];
+                    
+                    optionsOff();
+                    CronoType lresult = lfun.run(this, args.toArray(argarray));
+                    resetOptions();
+                    
+                    deindent();
+                    traceResult(lresult);
+                    printEnvironment();
+                    
+                    return lresult;
+                }
                 
-		deindent();
-                traceResult(lresult);
-                printEnvironment();
-                
-		return lresult;
-	    }
-	    if(eval == Function.EvalType.FULL) {
 		CronoType[] argarray = new CronoType[args.size()];
 		argarray = args.toArray(argarray);
 		TypeId[] types = new TypeId[args.size()];
@@ -438,7 +435,16 @@ public class Interpreter extends Visitor {
 		
 		return cresult;
 	    }
-	}
+	}else if(eval == EvalType.PARTIAL) {
+            List<CronoType> args = new ArrayList<CronoType>();
+            args.add(value);
+	    while(iter.hasNext()) {
+		args.add(iter.next().accept(this));
+	    }
+            CronoType conres = Cons.fromList(args);
+            traceResult(conres);
+            return conres;
+        }
 	deindent();
         /* The initial value is not a function */
 	except(new InterpreterException("Invalid Function Application: %s is not a function in %s", value, c));
