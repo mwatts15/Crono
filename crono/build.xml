@@ -18,6 +18,10 @@
   </target>
 
   <target name="main" depends="clean,crono" />
+  
+  <target name="packages" depends="crono">
+    <javac srcdir="./packages" destdir="./packages" classpath="./bin" />
+  </target>
 
   <path id="test.classpath">
     <pathelement location="./bin/"/>
