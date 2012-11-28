@@ -20,6 +20,35 @@ import crono.type.CronoTypeId;
 import crono.type.TypeId;
 
 public class Interpreter extends Visitor {
+    public class InterpreterState extends Visitor.VisitorState {
+        public boolean showEnv, rShowEnv;
+        public boolean showClosure, rShowClosure;
+        public boolean dynamic, rDynamic;
+        public boolean trace, rTrace;
+        public boolean printAST, rPrintAST;
+        public Stack<Environment> envStack;
+        
+        public InterpreterState() {
+            showEnv = Interpreter.this.showEnv;
+            rShowEnv = Interpreter.this.rShowEnv;
+            showClosure = Interpreter.this.showClosure;
+            rShowClosure = Interpreter.this.rShowClosure;
+            dynamic = Interpreter.this.dynamic;
+            rDynamic = Interpreter.this.rDynamic;
+            trace = Interpreter.this.trace;
+            rTrace = Interpreter.this.rTrace;
+            printAST = Interpreter.this.printAST;
+            rPrintAST = Interpreter.this.rPrintAST;
+            
+            envStack = new Stack<Environment>();
+            envStack.addAll(Interpreter.this.envStack);
+            int size = envStack.size();
+            for(int i = 0; i < size; ++i) {
+                envStack.set(i, new Environment(envStack.get(i)));
+            }
+        }
+    }
+    
     private static final String _scope_err = "No object %s in scope";
     private static final String _too_many_args =
 	"Too many arguments to %s: %d/%d recieved";
@@ -33,10 +62,11 @@ public class Interpreter extends Visitor {
     protected boolean dynamic, rDynamic;
     protected boolean trace, rTrace;
     protected boolean printAST, rPrintAST;
-    
     protected EvalType eval;
+    
     protected StringBuilder indent;
-        
+    protected Stack<Environment> envStack;
+    
     /**
      * Creates a new Interpreter with default option values.
      */
@@ -50,7 +80,7 @@ public class Interpreter extends Visitor {
 	indent = new StringBuilder();
 	eval = Function.EvalType.FULL;
 	
-	env_stack = new Stack<Environment>();
+	envStack = new Stack<Environment>();
 	reset(); /*< Set up initial environment and types */
     }
     
@@ -152,7 +182,8 @@ public class Interpreter extends Visitor {
      */
     protected void traceResult(CronoType result) {
         if(trace) {
-            System.out.printf("%sResult: %s\n", indent, result.repr());
+            System.out.printf("%sResult: %s [%s]\n", indent, result.repr(),
+                              result.typeId());
         }
     }
     /**
@@ -188,7 +219,7 @@ public class Interpreter extends Visitor {
      * Resets the Interpreter to it's default state, including the environment.
      */
     public void reset() {
-	env_stack.clear();
+	envStack.clear();
 	pushEnv(new Environment());
         resetOptions();
     }
@@ -480,5 +511,39 @@ public class Interpreter extends Visitor {
 	
         traceResult(result);
 	return result;
+    }
+    
+    public Visitor.VisitorState getState() {
+        return new InterpreterState();
+    }
+    public void setState(Visitor.VisitorState state) {
+        InterpreterState is = (InterpreterState)state;
+        showEnv = is.showEnv;
+        rShowEnv = is.rShowEnv;
+        showClosure = is.showClosure;
+        rShowClosure = is.rShowClosure;
+        dynamic = is.dynamic;
+        rDynamic = is.rDynamic;
+        trace = is.trace;
+        rTrace = is.rTrace;
+        printAST = is.printAST;
+        rPrintAST = is.rPrintAST;
+        
+        envStack = new Stack<Environment>();
+        envStack.addAll(is.envStack);
+        int size = envStack.size();
+        for(int i = 0; i < size; ++i) {
+            envStack.set(i, new Environment(envStack.get(i)));
+        }
+    }
+    
+    public Environment getEnv() {
+        return envStack.peek();
+    }
+    public void pushEnv(Environment env) {
+        envStack.push(env);
+    }
+    public void popEnv() {
+        envStack.pop();
     }
 }

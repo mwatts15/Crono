@@ -45,6 +45,7 @@ public class Crono {
     }
     
     public static void main(String[] args) {
+        boolean showTypes = false;
 	OptionParser optparse = new OptionParser(args);
 	Interpreter interp = new Interpreter();
 	Visitor v = interp;
@@ -80,6 +81,7 @@ public class Crono {
 		interp.dynamic(false);
 		break;
 	    case 't':
+                showTypes = true;
 		interp.getEnv().show_types = true;
 		break;
 	    case 'T':
@@ -116,7 +118,12 @@ public class Crono {
 	    while(statement != null) {
 		try{
 		    statement = statement.accept(v);
-		    System.out.printf("Result: %s\n", statement.repr());
+                    if(showTypes) {
+                        System.out.printf("Result: %s [%s]\n",statement.repr(),
+                                          statement.typeId());
+                    }else {
+                        System.out.printf("Result: %s\n", statement.repr());
+                    }
 		}catch(InterpreterException re) {
 		    String message = re.getMessage();
 		    if(message != null) {
