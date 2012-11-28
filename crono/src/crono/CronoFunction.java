@@ -250,11 +250,13 @@ public enum CronoFunction {
 		     CronoType.TYPEID, 2, true, EvalType.NONE)
     {
 	private static final String _subst_list_type =
-	    "LET: substitution list must be :cons, got %s";
+	    "let: substitution list must be :cons, got %s";
 	private static final String _subst_not_cons =
-	    "LET: expected :cons in substitution list, got %s";
+	    "let: expected :cons in substitution list, got %s";
 	private static final String _subst_not_sym = 
-	    "LET: argument names numst be :symbol, got %s";
+	    "let: argument names numst be :symbol, got %s";
+	private static final String _subst_not_pair =
+	    "let: arguments expect pairs; got %s";
 	
 	public CronoType run(Visitor v, CronoType[] args) {
 	    if(!(args[0] instanceof Cons)) {
@@ -276,7 +278,13 @@ public enum CronoFunction {
 		    throw new InterpreterException(_subst_not_sym,
 						   car.typeId());
 		}
-		
+		if(cdr instanceof Cons) {
+		    if(((Cons)cdr).cdr() != Nil.NIL) {
+			throw new InterpreterException(_subst_not_pair,
+						       cdr);
+		    }
+		    cdr = ((Cons)cdr).car();
+		}
 		cdr = cdr.accept(v);
 		symlist.add((Symbol)car);
 		arglist.add(cdr);
@@ -311,6 +319,8 @@ public enum CronoFunction {
 	    "letrec: expected :cons in substitution list, got %s";
 	private static final String _subst_not_sym = 
 	    "letrec: argument names numst be :symbol, got %s";
+	private static final String _subst_not_pair =
+	    "let: arguments expect pairs; got %s";
 	
 	public CronoType run(Visitor v, CronoType[] args) {
 	    if(!(args[0] instanceof Cons)) {
@@ -333,6 +343,13 @@ public enum CronoFunction {
 						   car.typeId());
 		}
 		
+		if(cdr instanceof Cons) {
+		    if(((Cons)cdr).cdr() != Nil.NIL) {
+			throw new InterpreterException(_subst_not_pair,
+						       cdr);
+		    }
+		    cdr = ((Cons)cdr).car();
+		}
 		cdr = cdr.accept(v);
 		symlist.add((Symbol)car);
 		arglist.add(cdr);
