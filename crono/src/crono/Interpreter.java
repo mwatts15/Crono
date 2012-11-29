@@ -138,8 +138,12 @@ public class Interpreter extends Visitor {
      */
     protected void deindent() {
         int size = indent.length();
-        indent.deleteCharAt(size - 1);
-        indent.deleteCharAt(size - 2);
+        if(size < 2) {
+            indent = new StringBuilder();
+        }else {
+            indent.deleteCharAt(size - 1);
+            indent.deleteCharAt(size - 2);
+        }
     }
     
     /**
@@ -391,7 +395,12 @@ public class Interpreter extends Visitor {
                     CronoType[] argarray = new CronoType[args.size()];
                     
                     optionsOff();
-                    CronoType lresult = lfun.run(this, args.toArray(argarray));
+                    CronoType lresult = null;
+                    try {
+                        lresult = lfun.run(this, args.toArray(argarray));
+                    }catch(RuntimeException e) {
+                        except(e);
+                    }
                     resetOptions();
                     
                     deindent();
@@ -418,8 +427,13 @@ public class Interpreter extends Visitor {
                 }
                 
                 optionsOff();
-                CronoType fresult;
-                fresult = ((Function)value).run(this, args.toArray(argarray));
+                CronoType fresult = null;
+                Function fun2 = (Function)value;
+                try {
+                    fresult = fun2.run(this, args.toArray(argarray));
+                }catch(RuntimeException re) {
+                    except(re);
+                }
                 resetOptions();
                 
                 deindent();

@@ -78,6 +78,16 @@ public enum CronoFunction {
 	    return "cdr";
 	}
     }),
+        SUBST(new Function(new TypeId[]{CronoType.TYPEID}, CronoType.TYPEID, 1,
+                           EvalType.PARTIAL)
+    {
+        public CronoType run(Visitor v, CronoType[] args) {
+            return args[0];
+        }
+        public String toString() {
+            return "subst";
+        }
+    }),
     LIST(new Function(new TypeId[]{CronoType.TYPEID}, Cons.TYPEID, 1, true)
     {
 	public CronoType run(Visitor v, CronoType[] args) {
@@ -779,6 +789,40 @@ public enum CronoFunction {
       public String toString(){
         return "entail";
       }
+    }),
+    TRY(new Function(new TypeId[]{Symbol.TYPEID, CronoType.TYPEID,
+                                  CronoType.TYPEID}, CronoType.TYPEID, 3,
+            false, EvalType.NONE)
+    {
+        public CronoType run(Visitor v, CronoType[] args) {
+            Visitor.VisitorState state = v.getState();
+            CronoType result = Nil.NIL;
+            try{
+                result = args[1].accept(v);
+            }catch(CronoException ce) {
+                v.setState(state);
+                v.getEnv().put((Symbol)args[0], ce.thrown);
+                result = args[2].accept(v);
+            }catch(Exception ex) {
+                v.setState(state);
+                CronoString thrown = CronoString.fromString(ex.getMessage());
+                v.getEnv().put((Symbol)args[0], thrown);
+                result = args[2].accept(v);
+            }
+            return result;
+        }
+        public String toString() {
+            return "try";
+        }
+    }),
+    RAISE(new Function(new TypeId[]{CronoType.TYPEID}, Nil.TYPEID, 1)
+    {
+        public CronoType run(Visitor v, CronoType[] args) {
+            throw new CronoException(args[0]);
+        }
+        public String toString() {
+            return "raise";
+        }
     }),
     ;
     
