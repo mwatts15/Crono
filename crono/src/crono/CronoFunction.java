@@ -1000,7 +1000,12 @@ public enum CronoFunction {
     TYPEOF(new Function(new TypeId[]{CronoType.TYPEID}, CronoTypeId.TYPEID, 1)
     {
         public CronoType run(Visitor v, CronoType[] args) {
-            return new CronoTypeId(args[0].typeId());
+            CronoTypeId id = new CronoTypeId(args[0].typeId());
+            CronoTypeId nid = v.getEnv().getType(id);
+            if(id == null) {
+                throw new TypeScopeException(id.type);
+            }
+            return nid;
         }
         public String toString() {
             return "typeof";
