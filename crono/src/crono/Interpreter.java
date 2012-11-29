@@ -138,8 +138,12 @@ public class Interpreter extends Visitor {
      */
     protected void deindent() {
         int size = indent.length();
-        indent.deleteCharAt(size - 1);
-        indent.deleteCharAt(size - 2);
+        if(size < 2) {
+            indent = new StringBuilder();
+        }else {
+            indent.deleteCharAt(size - 1);
+            indent.deleteCharAt(size - 2);
+        }
     }
     
     /**
