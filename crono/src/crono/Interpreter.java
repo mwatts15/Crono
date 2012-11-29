@@ -454,7 +454,7 @@ public class Interpreter extends Visitor {
      * @return The value obtained by visiting this node.
      */
     public CronoType visit(Atom a) {
-        printASTNode(String.format("Atom Node -> %s[%s]\n", a, a.typeId()));
+        printASTNode(String.format("Atom Node -> %s[%s]", a, a.typeId()));
         traceVisit(a);
         if(eval == EvalType.NONE) {
             traceResult(a);
