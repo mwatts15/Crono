@@ -49,6 +49,10 @@ public class CronoStruct extends Function {
         public CronoType get() {
             return data;
         }
+        
+        public Field copy() {
+            return new Field(sym, type, data.copy());
+        }
     }
     
     private static final String _malformed_field =
@@ -137,10 +141,10 @@ public class CronoStruct extends Function {
         super(_args, CronoType.TYPEID, 1, true, Function.EvalType.NONE);
         this.name = cs.name;
         this.parent = cs.parent;
+        
         this.fields = new HashMap<String, Field>();
-        this.fields.putAll(cs.fields);
-        for(Map.Entry<String,Field> a: fields.entrySet()){
-          System.out.printf("field %s = %s\n",a.getKey(),a.getValue().get());
+        for(Map.Entry<String,Field> item: cs.fields.entrySet()){
+            fields.put(item.getKey(), item.getValue().copy());
         }
         this.type = cs.type;
     }

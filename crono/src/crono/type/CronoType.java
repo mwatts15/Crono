@@ -12,4 +12,8 @@ public abstract class CronoType {
     }
     
     public abstract CronoType accept(Visitor v);
+    
+    public CronoType copy() {
+        return this;
+    }
 }
