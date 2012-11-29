@@ -758,17 +758,14 @@ public enum CronoFunction {
                                                fnfe.getMessage());
             }
             Parser p = new Parser(is);
-            CronoType program = null;
+            CronoType[] program = null;
             try {
                 program = p.program();
             }catch(ParseException pe) {
                 throw new InterpreterException(_bad_parse, pe.getMessage());
             }
-            if(!(program instanceof Cons)) {
-                return TruthValue.T;
-            }
-            for(CronoType item : (Cons)program) {
-                item.accept(v);
+            for(int i = 0; i < program.length; ++i) {
+                program[i].accept(v);
             }
             return TruthValue.T;
         }
@@ -912,7 +909,12 @@ public enum CronoFunction {
             Parser p = new Parser(reader);
             
             try {
-                return p.program().accept(v);
+                CronoType[] program = p.program();
+                CronoType result = Nil.NIL;
+                for(int i = 0; i < program.length; ++i) {
+                    result = program[i].accept(v);
+                }
+                return result;
             }catch(ParseException pe) {
                 throw new InterpreterException("EVAL: parse error\n%s",
                                                pe.getMessage());

@@ -179,9 +179,9 @@ CronoType node():
       (
           c = list() {
             return new Quote(c);
-	  }
-	| a = atom() {
-	    return new Quote(a);
+          }
+        | a = atom() {
+            return new Quote(a);
           }
       )
     | (
@@ -211,7 +211,7 @@ CronoType statement():
   )
 }
 
-CronoType program():
+CronoType[] program():
 {
   List<CronoType> statements = new LinkedList<CronoType>();
   CronoType s;
@@ -223,8 +223,8 @@ CronoType program():
     }
   )* {
     if(statements.size() <= 0) {
-      return Nil.NIL;
+      return new CronoType[]{Nil.NIL};
     }
-    return Cons.fromList(statements);
+    return statements.toArray(new CronoType[statements.size()]);
   }
 }
