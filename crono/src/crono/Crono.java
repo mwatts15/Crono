@@ -37,11 +37,13 @@ public class Crono {
     public static List<String> files = new LinkedList<String>();
     
     private static CronoType getStatement(Parser p) {
-        if(interactive) {
-            System.out.print(prompt);
-        }
+        System.out.print(prompt);
         try {
-            return p.statement();
+            CronoType statement = p.statement();
+            if(!interactive) {
+                System.out.println(statement);
+            }
+            return statement;
         }catch(ParseException pe) {
             System.err.println(pe);
         }
@@ -135,8 +137,8 @@ public class Crono {
     }
     
     public static void interactive() {
-        loadPrelude();
         System.out.println(introstr);
+        loadPrelude();
         
         Parser parser = new Parser(new InputStreamReader(System.in));
         CronoType statement = getStatement(parser);
