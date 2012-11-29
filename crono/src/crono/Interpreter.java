@@ -431,6 +431,7 @@ public class Interpreter extends Visitor {
             }
             CronoType conres = Cons.fromList(args);
             traceResult(conres);
+            deindent();
             return conres;
         }
         deindent();
