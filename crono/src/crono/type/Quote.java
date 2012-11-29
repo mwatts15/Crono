@@ -19,4 +19,8 @@ public class Quote extends CronoType {
     public String toString() {
         return "'" + node.toString();
     }
+    
+    public boolean equals(Object o) {
+        return ((o instanceof Quote) && ((Quote)o).node.equals(node));
+    }
 }

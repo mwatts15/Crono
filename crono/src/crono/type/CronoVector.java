@@ -104,4 +104,18 @@ public class CronoVector extends CronoArray {
         builder.append("]");
         return builder.toString();
     }
+    
+    public boolean equals(Object o) {
+        if(!(o instanceof CronoVector) || ((CronoVector)o).size() != size) {
+            return false;
+        }
+        
+        CronoVector vec = (CronoVector)o;
+        for(int i = 0; i < size; ++i) {
+            if(!(vec.get(i).equals(data.get(i)))) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

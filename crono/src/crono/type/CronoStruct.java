@@ -177,4 +177,8 @@ public class CronoStruct extends Function {
     public String toString() {
         return name;
     }
+    
+    public boolean equals(Object o) {
+        return true;
+    }
 }

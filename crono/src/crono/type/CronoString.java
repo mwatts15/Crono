@@ -96,4 +96,9 @@ public class CronoString extends CronoArray {
     public String repr() {
         return "\"" + data.toString() + "\"";
     }
+    
+    public boolean equals(Object o) {
+        return ((o instanceof CronoString) &&
+                ((CronoString)o).data.toString().equals(data.toString()));
+    }
 }

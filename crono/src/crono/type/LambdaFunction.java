@@ -70,4 +70,31 @@ public class LambdaFunction extends Function {
             (body.length > 1) ? Arrays.toString(body) : body[0].toString();
         return String.format("(\\ %s %s)", builder.toString(), bodystr);
     }
+    /*
+    public final Symbol[] arglist;
+    public final CronoType body[];
+    public final Environment environment;
+     */
+    public boolean equals(Object o) {
+        if(!(o instanceof LambdaFunction)) {
+            return false;
+        }
+        LambdaFunction fun = (LambdaFunction)o;
+        if(fun.arglist.length != arglist.length ||
+           fun.body.length != body.length) {
+            return false;
+        }
+        
+        for(int i = 0; i < arglist.length; ++i) {
+            if(!(arglist[i].equals(fun.arglist[i]))) {
+                return false;
+            }
+        }
+        for(int i = 0; i < body.length; ++i) {
+            if(!(body[i].equals(fun.body[i]))) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

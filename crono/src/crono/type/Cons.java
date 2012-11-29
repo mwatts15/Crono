@@ -146,4 +146,19 @@ public class Cons extends CronoType implements Iterable<CronoType> {
         }
         return list;
     }
+    
+    public boolean equals(Object o) {
+        if(!(o instanceof Cons)) {
+            return false;
+        }
+        if(o instanceof Nil) {
+            return (this instanceof Nil);
+        }
+        if(o instanceof TruthValue) {
+            return (this instanceof TruthValue);
+        }
+        
+        Cons lhs = (Cons)o, rhs = this;
+        return (lhs.car().equals(rhs.car()) && lhs.cdr().equals(rhs.cdr()));
+    }
 }

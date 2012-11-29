@@ -56,4 +56,28 @@ public abstract class Function extends Atom {
     public TypeId typeId() {
         return Function.TYPEID;
     }
+    
+    public boolean equals(Object o) {
+        if(!(o instanceof Function)) {
+            return false;
+        }
+        if(o instanceof LambdaFunction) {
+            return o.equals(this);
+        }
+        Function fun = (Function)o;
+        if((!(returntype.equals(fun.returntype)) || variadic != fun.variadic ||
+            !(eval.equals(fun.eval)) || arity != fun.arity ||
+            args.length != fun.args.length ||
+            !(toString().equals(fun.toString()))))
+        {
+            return false;
+        }
+        
+        for(int i = 0; i < args.length; ++i) {
+            if(!(args[i].equals(fun.args[i]))) {
+                return false;
+            }
+        }
+        return true;
+    }
 }
