@@ -60,6 +60,8 @@ public class Environment {
     
     public Environment(Environment env) {
         symbols = new HashMap<String, CronoType>(env.symbols);
+        structs = new HashMap<String, CronoStruct>(env.structs);
+        types = new HashMap<String, CronoTypeId>(env.types);
         show_builtins = env.show_builtins;
         multiline = env.multiline;
         show_types = env.show_types;
@@ -91,7 +93,8 @@ public class Environment {
         return structs.get(sym.toString());
     }
     public CronoTypeId getType(CronoTypeId id) {
-        return getType(id.type.image);
+        CronoTypeId nid = getType(id.type.image);
+        return (nid == null) ? id : nid;
     }
     public CronoTypeId getType(String str) {
         return types.get(str);
