@@ -386,9 +386,9 @@ public class Interpreter extends Visitor {
                     types[i] = argarray[i].typeId();
                 }
                 int check = 0;
-                for(int i = 0; i < fun.args.length; ++i) {
-                    check = Math.min(i, argarray.length);
-                    if(!(fun.args[i].isType(argarray[check]))) {
+                for(int i = 0; i < argarray.length; ++i) {
+                    check = Math.min(i, fun.args.length - 1);
+                    if(!(fun.args[check].isType(argarray[i]))) {
                         String argstr = Arrays.toString(types);
                         String expected = Arrays.toString(fun.args);
                         except(new InterpreterException(_type_mismatch, fun,

@@ -44,13 +44,11 @@
   
 %Function composition combinator
 (define <B> (\ (f g x) (f (g x))))
+% (define <B> (<S> (<K> <S>) <K>))
 
 %
 (define <C> (\ (f x y) ((f y) x)))
-
-%(define <Y> (f)
-%  (f (<Y> f)) )
-%Cannata's incorrect definition of Y combinator
+% (define <C> (<S> (<S> (<K> (<S> (<K> <S>) <K>)) <S>) (<K> <K>)))
 
 %Recursive function 
 (define <Y> (\ (f)
