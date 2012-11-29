@@ -41,34 +41,35 @@ public class InfDatabase{
 		return elements;
 	}
 	
-	public static ArrayList<InfTriple> seek(InfClass iclass,int what){
+	public static ArrayList<InfTriple> seek(InfClass subj,InfClass pred, InfClass obj){
 		ArrayList<InfTriple> ret = new ArrayList<InfTriple>();
 		for(Iterator i = elements.iterator();i.hasNext();){
 			InfTriple t = (InfTriple)i.next();
-			switch(what){
-				default: case 0:
-					if(iclass.equals(t.getSubject())) ret.add(t);
-				break;
-				case 1:
-					if(iclass.equals(t.getPredicate())) ret.add(t);
-				break;
-				case 2:
-					if(iclass.equals(t.getPredicate())) ret.add(t);
-				break;}
+				if ((subj==null || subj.equals(t.getSubject()))
+				  &&(pred==null || pred.equals(t.getPredicate()))
+				  &&(obj ==null || obj.equals(t.getObject())))
+					ret.add(t);
 		}
 		return ret;
 	}
 	
-  /*
+  
   public static ArrayList<InfTriple> getStructFields(Environment env){
     ArrayList<InfTriple> ret = new ArrayList<InfTriple>();
     for(Iterator i = elements.iterator();i.hasNext();){
       InfTriple t = (InfTriple)i.next();
-      if(t.getPredicate() instanceof InfStruct.HasA)
-        insert(new InfTriple(t.getSubject(),t.getObject(),,true))
+      if(t.getPredicate() instanceof InfStruct.HasA){
+		//(defined name, hasa, fieldname)
+		//->(defined name, fieldname, fieldvalue)
+		  if(seek(t.getSubject(),t.getObject(),null).isEmpty()){
+			CronoStruct parentStruct = env.getStruct(new Symbol(t.getSubject().getName()));
+			InfClass c = new InfClass(parentStruct.getField(t.getObject().getName()).get().toString());
+			ret.add(new InfTriple(t.getSubject(),t.getObject(),c,true));
+		  }
       }
     }
-  }*/
+	return ret;
+  }
   
   
 	public static boolean entail(Environment env){
@@ -76,6 +77,7 @@ public class InfDatabase{
 		ArrayList<InfTriple> copy;
 		do{
 			//System.out.println("Entailing...");
+			elements.addAll(getStructFields(env));
 			copy = new ArrayList<InfTriple>(elements);
 			changed = false;
 			for(Iterator i = elements.iterator();i.hasNext();){

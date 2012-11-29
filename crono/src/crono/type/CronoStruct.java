@@ -171,7 +171,10 @@ public class CronoStruct extends Function {
             throw new InterpreterException("Too many arguments to struct");
         }
     }
-    
+    public Field getField(String name){
+		return fields.get(name);
+	}
+	
     public CronoStruct copy() {
         return new CronoStruct(this);
     }
