@@ -19,6 +19,10 @@ public class CronoTypeId extends Atom {
     
     public boolean equals(Object o) {
         return ((o instanceof CronoTypeId) &&
-                ((CronoTypeId)o).type.equals(type));
+                type.equals(((CronoTypeId)o).type));
+    }
+    
+    public boolean complete() {
+        return type.complete();
     }
 }
