@@ -37,7 +37,7 @@
 (define <K> (\ (x y) x))
 
 %General application combinator
-(define <S> (\ (f g x) (f x (g x))))
+(define <S> (\ (f g p) (f p (g p))))
   
 %Function composition combinator
 (define <B> (\ (f g x) (f (g x))))
@@ -56,5 +56,8 @@
 
 (define <Y> (\ (f)
   (\ (x) (f (x x))) (\ (x) (f (x x))) ))
+(define pred (\ (x) (- x 1)))
+(define my_cond (\ (p f g x) (if (p x) (f x) (g x))))
+(define fapp (\ (x y) ((<S> (<K> (<S> <I>))   <K>) x y)))
+(define pradd (\ (x z) (<Z> (<B> (my_cond ((=) 0) (<K> z)) (<B> (<S> (<B> (+) (<K> 1)) ) (<C> <B> pred))) x)))
 
-(define <COND> (\ (p f g x) (if (p x) (f x) (g x))))

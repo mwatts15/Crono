@@ -27,6 +27,7 @@ public class CombinatorApplication extends CronoType
      */
     public CombinatorApplication (Cons c)
     {
+        System.out.println("Reducing combinatory expression " + c);
         function = c.car();
         // Unchecked cdr assumed to be cons
         args = ((Cons) c.cdr()).toList();
@@ -47,11 +48,12 @@ public class CombinatorApplication extends CronoType
          * This may be extended to a "callable"
          * later
          */
-        CronoType o = function.accept(v);
         System.out.printf("Reducing combinatory expression...\n");
+        CronoType o = function.accept(v);
         CronoType result = null;
         if (o instanceof LambdaFunction)
         {
+            System.out.println("Simple combinator...");
             LambdaFunction f = (LambdaFunction) o;
 
             /* The arguments are passed to the function
@@ -63,7 +65,12 @@ public class CombinatorApplication extends CronoType
              * arguments.
              */
 
-            if (f.arity == args.size())
+            System.out.println(args);
+            if (args.size() == 0)
+            {
+                result = function;
+            }
+            else if (f.arity == args.size())
             {
                 CronoType substituted_body = f.body[0];
                 int i = 0;
@@ -76,21 +83,51 @@ public class CombinatorApplication extends CronoType
                 /* We have to keep evaluating this to reduce it to a value */
                 result = substituted_body.accept(v);
             }
+            else if (f.arity < args.size())
+            {
+                /* we take as many as we need and leave the rest alone */
+                Cons usable_args = Cons.fromList(args.subList(0, f.arity));
+                Cons rest_of_args = Cons.fromList(args.subList(f.arity, args.size()));
+                /* We can use either the combinator or function application
+                /* We can use either the combinator or function application
+                 * path for this
+                 */
+                CronoType reduced = (new Cons(function, usable_args)).accept(v);
+                Cons new_expr = Nil.NIL;
+                if (reduced instanceof Cons)
+                {
+                    new_expr = ((Cons) reduced).append(rest_of_args);
+                }
+                else
+                {
+                    new_expr = new Cons(reduced, rest_of_args);
+                }
+                result = new_expr.accept(v);
+            }
             else
             {
+                System.out.println("Not enough arguments to combinator...");
                 result = new Cons(function, Cons.fromList(args));
             }
 
+        }
+        else if (o instanceof Cons)
+        {
+            /* We have to append this to args */
+            System.out.println("Reducing parethesized combinator...");
+            Cons reduced = ((Cons) o).append(Cons.fromList(args));
+            result = reduced.accept(v);
         }
         else
         {
             throw new TypeException(this, Function.TYPEID, o);
         }
+        System.out.println("Reduced expression: " + result);
         return result;
     }
     public String toString ()
     {
-        return "(apply " + function.toString() + " " + args.toString() + ")";
+        return "(comb_apply " + function.toString() + " " + args.toString() + ")";
     }
     public TypeId typeId() {
         return CombinatorApplication.TYPEID;
