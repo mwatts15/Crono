@@ -1,3 +1,25 @@
+%%%%
+% Base Predicates
+%%%%
+(define nil? (= Nil))
+(define zero? (= 0))
+(define t? (= #t))
+
+(defun any?       (value) (= (typeof value) :any))
+(defun array?     (value) (= (typeof value) :array))
+(defun atom?      (value) (= (typeof value) :atom))
+(defun char?      (value) (= (typeof value) :char))
+(defun cons?      (value) (= (typeof value) :cons))
+(defun float?     (value) (= (typeof value) :float))
+(defun func?      (value) (= (typeof value) :func))
+(defun int?       (value) (= (typeof value) :int))
+(defun number?    (value) (= (typeof value) :number))
+(defun primitive? (value) (= (typeof value) :primitive))
+(defun string?    (value) (= (typeof value) :string))
+(defun struct?    (value) (= (typeof value) :struct))
+(defun type?      (value) (= (typeof value) :type))
+(defun vector?    (value) (= (typeof value) :vector))
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % boolean functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -6,6 +28,11 @@
 (define and (\ (a b) (if a b #f)))
 
 (define or (\ (a b) (if a #t b)))
+
+%%%%
+% Extra predicates
+%%%%
+(defun boolean? (value) (or (nil? value) (t? value)))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % higher order functions
@@ -26,6 +53,7 @@
 (defun ! (n) (if (= n 0) 1 (* (! (- n 1)) n)))
 
 (defun mod (x y) (if (< x y) x (mod (- x y) y)))
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % combinators
