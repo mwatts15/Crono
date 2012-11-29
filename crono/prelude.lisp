@@ -30,6 +30,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % combinators
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(define pred (+ -1))
+(define succ (+ 1))
+
 %identity combinator
 (define <I> (\ (x) x))
   
@@ -37,24 +40,29 @@
 (define <K> (\ (x y) x))
 
 %General application combinator
-(define <S> (\ (f g x) (f x (g x))))
+(define <S> (\ (f g x) ((f x) (g x))))
   
 %Function composition combinator
 (define <B> (\ (f g x) (f (g x))))
 
 %
-(define <C> (\ (f x y) (f y x)))
+(define <C> (\ (f x y) ((f y) x)))
 
 %(define <Y> (f)
 %  (f (<Y> f)) )
 %Cannata's incorrect definition of Y combinator
 
 %Recursive function 
-(define <Z> (\ (f)
-    ((\ (x) (f (\ (v) ((x x) v))))
-     (\ (x) (f (\ (v) ((x x) v)))))))
-
 (define <Y> (\ (f)
-  (\ (x) (f (x x))) (\ (x) (f (x x))) ))
+    ((\ (x) (f (\ (v) ((x x) v))))
+     (\ (y) (f (\ (w) ((y y) w)))))))
+%(define <Y> (\ (f)
+%  (\ (x) (f (x x))) (\ (x) (f (x x))) ))
 
 (define <COND> (\ (p f g x) (if (p x) (f x) (g x))))
+
+(defun pradd1 (x z)
+  (<Y> (<B>
+        (<COND> (= 0) (<K> z))
+        (<B> (<S> (<B> + (<K> 1))) (<C> <B> pred)))
+       x))
