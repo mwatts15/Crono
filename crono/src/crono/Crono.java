@@ -41,7 +41,7 @@ public class Crono {
         try {
             CronoType statement = p.statement();
             if(!interactive) {
-                System.out.println(statement);
+                System.out.println((statement == null) ? "" : statement);
             }
             return statement;
         }catch(ParseException pe) {
