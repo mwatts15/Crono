@@ -58,6 +58,16 @@ public enum CronoFunction {
             return "cdr";
         }
     }),
+        SUBST(new Function(new TypeId[]{CronoType.TYPEID}, CronoType.TYPEID, 1,
+                           EvalType.PARTIAL)
+    {
+        public CronoType run(Visitor v, CronoType[] args) {
+            return args[0];
+        }
+        public String toString() {
+            return "subst";
+        }
+    }),
     LIST(new Function(new TypeId[]{CronoType.TYPEID}, Cons.TYPEID, 1, true)
     {
         public CronoType run(Visitor v, CronoType[] args) {
