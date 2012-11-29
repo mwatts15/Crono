@@ -6,18 +6,29 @@ PARSER_BEGIN(Parser)
 
 package crono;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-// PROTIP: we can't statically import NIL because javacc gives it special
-// meaning in Parser
-import crono.AbstractSyntax.*;
-import crono.Cons;
-import crono.CronoOptions;
-import crono.Nil;
+import crono.type.Atom;
+import crono.type.Cons;
+import crono.type.CronoCharacter;
+import crono.type.CronoFloat;
+import crono.type.CronoInteger;
+import crono.type.CronoString;
+import crono.type.CronoType;
+import crono.type.CronoTypeId;
+import crono.type.Nil;
+import crono.type.Quote;
+import crono.type.Symbol;
+import crono.type.TruthValue;
+import crono.type.TypeId;
 
 public class Parser {
+  public Environment env;
+  
+  public static boolean debug = false;
 }
 
 PARSER_END(Parser)
@@ -28,24 +39,33 @@ SKIP:
   | "\t"
   | "\n"
   | "\r"
-  | <"%" (~["\n","\r"])* ("\n"|"\r")>
+  | < "%" (~["\n","\r"])* ("\n"|"\r") >
 }
 
 TOKEN:
 {
-    < NIL : ["N","n"] ["I","i"] ["L","l"] >
+    < NIL : (["N", "n"] ["I", "i"] ["L", "l"]) | ("#f" | "#F") >
+  | < TRUE : ("#t" | "#T") >
 }
 
 TOKEN:
 {
     < LPAR : "(" >
   | < RPAR : ")" >
+<<<<<<< HEAD
+  | < INTEGER : ("-")? (["0"-"9"])+ >
+  | < FLOAT : ("-")? (["0"-"9"])+ "." (["0"-"9"])+ >
+  | < CHAR : "'" ([" "-"~"] | ("\\" ~["\n", "\r", "\t"])) "'" >
+=======
   | < QUOTE : "'" >
   | < INTEGER : ("+" | "-")? (["0"-"9"])+ >
   | < FLOAT : (["+", "-"])? (["0"-"9"])+ "." (["0"-"9"])+ >
   | < CHAR : "'" ([" "-"~"] | ("\\" ~["\n", "\r"])) "'" >
+>>>>>>> 234f391bf0d20ff16de83b39c79e760ce89e722d
   | < STRING : "\"" ("\\" ~["\n"] | ~["\"", "\n"])* "\"" >
-  | < SYMBOL : ["!"-"'", "*"-"/", ":"-"~"] (["!"-"'", "*"-"~"])* >
+  | < TYPEID : ":" (["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","-"])?)+ >
+  | < SYMBOL : ["!"-"&", "*"-"/", ";"-"~"] (["!"-"'", "*"-"~"])* >
+  | < QUOTE : "'" >
 }
 
 TOKEN:
@@ -54,49 +74,73 @@ TOKEN:
 }
 
 Atom atom():
-{ Token n; }
 {
-    <NIL>         { return Nil.NIL; }
-  | n = <INTEGER> { return new CronoNumber(Long.valueOf(n.image)); }
-  | n = <FLOAT>   { return new CronoFloat(Double.valueOf(n.image)); }
-  | n = <CHAR>    {
-      if(n.image.length() == 4) { /*< '\n' */
-        return CronoCharacter.escape(n.image.charAt(2));
-      }
-      return new CronoCharacter(n.image.charAt(1));
-    }
-  | n = <SYMBOL>  { return Symbol.valueOf(n.image); }
+  Token n;
+  Atom a;
 }
-
-Cons string():
-{ Token n; }
 {
-  n = <STRING> {
-    List<CronoType> list = new LinkedList<CronoType>();
-    int strlen = n.image.length() - 1;
-    boolean escaped = false;
-    char _c;
-    for(int i = 1; i < strlen; ++i) {
-      _c = n.image.charAt(i);
-      if(escaped) {
-        list.add(CronoCharacter.escape(_c));
-	escaped = false;
-      }else {
-        if(_c == '\\') {
-	  escaped = true;
-	}else {
-	  list.add(new CronoCharacter(_c));
-	}
+    n = <INTEGER> {
+      if(debug) {
+        System.out.println("Parser: Saw <INTEGER>");
       }
+      return new CronoInteger(n.image);
     }
-    list.add(Nil.NIL);
-    return new Cons(list);
-  }
+  | n = <FLOAT> {
+      if(debug) {
+        System.out.println("Parser: Saw <FLOAT>");
+      }
+      return new CronoFloat(n.image);
+    }
+  | n = <CHAR> {
+      if(debug) {
+        System.out.println("Parser: Saw <CHAR>");
+      }
+      return new CronoCharacter(n.image);
+    }
+  | n = <TYPEID> {
+      if(debug) {
+        System.out.println("Parser: Saw <TYPEID>");
+      }
+      CronoTypeId id = null;
+      if(env != null) {
+        id = env.getType(n.image);
+      }
+      return (id == null) ? new CronoTypeId(new TypeId(n.image, null)) : id;
+    }
+  | n = <SYMBOL> {
+      if(debug) {
+        System.out.println("Parser: Saw <SYMBOL>");
+      }
+      return new Symbol(n.image);
+    }
+  | n = <STRING> {
+      if(debug) {
+        System.out.println("Parser: Saw <STRING>");
+      }
+      return new CronoString(n.image);
+    }
 }
 
 Cons list():
 {
   Token n;
+<<<<<<< HEAD
+  CronoType node;
+  List<CronoType> args = new ArrayList<CronoType>();
+}
+{
+    <NIL> {
+      if(debug) {
+        System.out.println("Parser: Saw <NIL>");
+      }
+      return Nil.NIL;
+    }
+  | <TRUE> {
+      if(debug) {
+        System.out.println("Parser: Saw <TRUE>");
+      }
+      return TruthValue.T;
+=======
   Atom a;
   Cons c;
   List<CronoType> l = new ArrayList<CronoType>();
@@ -105,67 +149,82 @@ Cons list():
 {
     c = string() {
       return c;
+>>>>>>> 234f391bf0d20ff16de83b39c79e760ce89e722d
     }
   | <LPAR>
-  (
-      c = list() {
-        if (CronoOptions.PARSER_DPRINT) {
-          CronoOptions.dprint("Saw LIST: %s\n",c);
-        }
-        l.add(c);
+    (
+      node = node() {
+        args.add(node);
       }
-    | a = atom() {
-        if (CronoOptions.PARSER_DPRINT) {
-          CronoOptions.dprint("Saw ATOM: %s [ %s ]\n", a,
-            a.getClass().getName());
-        }
-        l.add(a);
+    )* <RPAR> {
+      if(debug) {
+        System.out.println("Parser: Saw LIST");
       }
-  )*
-  <RPAR>
-  {
-    if (l.size() == 0) {
-      return Nil.NIL;
-    } else {
-      l.add(Nil.NIL);
-      return new Cons(l);
+      if(args.size() == 0) {
+        return Nil.NIL;
+      }else {
+        return Cons.fromList(args);
+      }
     }
-  }
 }
 
-CronoType prog(Environment env):
+CronoType node():
 {
-  List<CronoType> l;
-  LambdaFunction lf;
   Cons c;
   Atom a;
-  CronoType lastResult = null;
 }
 {
   (
-      c = list() {
-        if (CronoOptions.PARSER_DPRINT) {
-          CronoOptions.dprint("Saw LIST: %s\n",c);
-        }
-        l = new ArrayList<CronoType>();
-        l.add(c);
-        lf = new LambdaFunction(l, env);
-        lastResult = Interpreter.run(lf, env);
-        env = lf.environment;
+      <QUOTE>
+      (
+          c = list() {
+            return new Quote(c);
+	  }
+	| a = atom() {
+	    return new Quote(a);
+          }
+      )
+    | (
+          c = list() {
+            return c;
+          }
+        | a = atom() {
+            return a;
+          }
+      )
+  )
+}
+
+
+CronoType statement():
+{
+  CronoType s;
+}
+{
+  (
+      s = node() {
+        return s;
       }
-    | a = atom() {
-        if (CronoOptions.PARSER_DPRINT) {
-          CronoOptions.dprint("Saw ATOM: %s [ %s ]\n", a,
-            a.getClass().getName());
-        }
-        l = new ArrayList<CronoType>();
-        l.add(a);
-        lf = new LambdaFunction(l, env);
-        lastResult = Interpreter.run(lf, env);
-        env = lf.environment;
+    | <EOF> {
+        return null;
       }
-    | <RPAR> { throw new ParseException("Unmatched parenthesis"); }
+  )
+}
+
+CronoType program():
+{
+  List<CronoType> statements = new LinkedList<CronoType>();
+  CronoType s;
+}
+{
+  (
+    s = node() {
+      statements.add(s);
+    }
   )* {
-    return lastResult;
+    if(statements.size() <= 0) {
+      return Nil.NIL;
+    }
+    return Cons.fromList(statements);
   }
 }

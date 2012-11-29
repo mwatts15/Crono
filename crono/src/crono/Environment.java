@@ -1,93 +1,170 @@
 package crono;
 
+import crono.type.CronoStruct;
+import crono.type.CronoType;
+import crono.type.CronoTypeId;
+import crono.type.Function;
+import crono.type.LambdaFunction;
+import crono.type.Symbol;
+import crono.type.TypeId;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import crono.AbstractSyntax.CronoType;
-import crono.AbstractSyntax.CronoFunction;
-import crono.Symbol;
-
-import static crono.CronoOptions.err;
-
-public class Environment implements Iterable<Symbol> {
-  private Map<Symbol, CronoType> vars;
-
-  public Environment(){
-    this.vars = new HashMap<Symbol, CronoType>();
-  }
-
-  public Environment(Environment environment) {
-    this();
-    this.update(environment);
-  }
-
-  public void put(Symbol k, CronoType v) {
-    vars.put(k,v);
-  }
-
-  /**
-   * Returns object mapped to by the symbol s.
-   *
-   * @throws: RuntimeException if there is no mapping for s
-   */
-  public CronoType get(Symbol s) {
-    CronoType result = vars.get(s);
-
-    if (result == null) {
-      err("No object %s in scope.", s);
+public class Environment {
+    public boolean show_builtins, multiline, show_types;
+    
+    private Map<String, CronoType> symbols;
+    private Map<String, CronoStruct> structs;
+    private Map<String, CronoTypeId> types;
+    private String repr;
+    private boolean dirty;
+    
+    public Environment() {
+        this(true);
     }
-
-    return result;
-  }
-
-  public boolean containsKey(Symbol s) {
-    return vars.containsKey(s);
-  }
-
-  public Iterator<Symbol> iterator() {
-    return vars.keySet().iterator();
-  }
-
-  public Environment update(Environment other) {
-    if (other != null) {
-      for(Symbol key : other) {
-        this.put(key, other.get(key));
-      }
-    }
-    return this;
-  }
-
-  public String toString() {
-    return toString(CronoOptions.ENVIRONMENT_MULTILINE);
-  }
-
-  public String toString(boolean multiline) {
-    StringBuilder result = new StringBuilder();
-
-    Iterator<Symbol> it = this.iterator();
-    while(it.hasNext()) {
-      Symbol key = it.next();
-      CronoType val = this.get(key);
-      // Don't print if we're a CronoFunction and !ENVIRONMENT_SHOW_BUILTIN.
-      if (!(val instanceof CronoFunction) ||
-          CronoOptions.ENVIRONMENT_SHOW_BUILTIN) {
-        result.append(key.toString());
-        result.append(": ");
-        /* Have to be careful we aren't printing a
-         * recursive procedure's closure on this one */
-        result.append(val.toString());
-        if (CronoOptions.ENVIRONMENT_SHOW_TYPES) {
-          result.append(" [");
-          result.append(val.getClass().getName());
-          result.append("]");
+    
+    public Environment(boolean builtins) {
+        symbols = new HashMap<String, CronoType>();
+        structs = new HashMap<String, CronoStruct>();
+        types = new HashMap<String, CronoTypeId>();
+        show_builtins = false;
+        multiline = false;
+        show_types = false;
+        dirty = true; /*< dirty flag to rebuild string repr */
+        
+        this.put(crono.type.CronoType.TYPEID);
+        this.put(crono.type.Atom.TYPEID);
+        this.put(crono.type.Cons.TYPEID);       
+        this.put(crono.type.CronoPrimitive.TYPEID);
+        this.put(crono.type.CronoArray.TYPEID);
+        this.put(crono.type.CronoCharacter.TYPEID);
+        this.put(crono.type.CronoFloat.TYPEID);
+        this.put(crono.type.CronoInteger.TYPEID);
+        this.put(crono.type.CronoNumber.TYPEID);
+        this.put(crono.type.CronoString.TYPEID);
+        this.put(crono.type.CronoStruct.TYPEID);
+        this.put(crono.type.CronoVector.TYPEID);
+        this.put(crono.type.Function.TYPEID);
+        this.put(crono.type.Nil.TYPEID);
+        this.put(crono.type.Symbol.TYPEID);
+        this.put(crono.type.CronoTypeId.TYPEID);
+        
+        if(builtins) {
+            for(CronoFunction cf : CronoFunction.values()) {
+                put(new Symbol(cf.function.toString()), cf.function);
+            }
         }
-        if (it.hasNext()) {
-          result.append(multiline ? "\n" : ", ");
-        }
-      }
     }
+    
+    public Environment(Environment env) {
+        symbols = new HashMap<String, CronoType>(env.symbols);
+        show_builtins = env.show_builtins;
+        multiline = env.multiline;
+        show_types = env.show_types;
+        dirty = env.dirty;
+    }
+    
+    public void put(CronoStruct struct) {
+        dirty = true;
+        this.structs.put(struct.name, struct);
+    }
+    public void put(TypeId type) {
+        put(new CronoTypeId(type));
+    }
+    public void put(CronoTypeId type) {
+        dirty = true;
+        this.types.put(type.type.image, type);
+    }
+    
+    public void put(Symbol sym, CronoType value) {
+        dirty = true;
+        symbols.put(sym.toString(), value);
+    }
+    
+    public CronoType get(Symbol sym) {
+        return symbols.get(sym.toString());
+    }
+    
+    public CronoStruct getStruct(Symbol sym) {
+        return structs.get(sym.toString());
+    }
+    public CronoTypeId getType(CronoTypeId id) {
+        return getType(id.type.image);
+    }
+    public CronoTypeId getType(String str) {
+        return types.get(str);
+    }
+    
+    public void remove(Symbol sym) {
+        dirty = true;
+        symbols.remove(sym.toString());
+    }
+    
+    public boolean contains(Symbol sym) {
+        return symbols.containsKey(sym.toString());
+    }
+    
+    public Iterator<Map.Entry<String, CronoType>> iterator() {
+        return symbols.entrySet().iterator();
+    }
+    
+    private boolean isBuiltin(CronoType item) {
+        return (item instanceof Function && !(item instanceof LambdaFunction));
+    }
+    
+    public String toString() {
+        if(dirty) {
+            StringBuilder result = new StringBuilder();
+            Iterator<Map.Entry<String, CronoType>> iter = iterator();
+            Map.Entry<String, CronoType> entry;
+            String sym;
+            CronoType val;
+            boolean empty = true;
+            while(iter.hasNext()) {
+                entry = iter.next();
+                sym = entry.getKey();
+                val = entry.getValue();
+                if(show_builtins || !isBuiltin(val)) {
+                    result.append("(let ((");
+                    result.append(sym);
+                    result.append(" ");
+                    result.append(val.repr());
+                    if(show_types) {
+                        result.append(" ");
+                        result.append(val.typeId());
+                    }
+                    result.append(")");
+                    empty = false;
+                    break;
+                }
+            }
+            while(iter.hasNext()) {
+                entry = iter.next();
+                sym = entry.getKey();
+                val = entry.getValue();
+                if(show_builtins || !isBuiltin(val)) {
+                    result.append(" (");
+                    result.append(sym);
+                    result.append(" ");
+                    result.append(val.repr());
+                    if(show_types) {
+                        result.append(" ");
+                        result.append(val.typeId());
+                    }
+                    result.append(")");
+                }
+            }
 
-    return result.toString();
-  }
+            if(empty) {
+                repr = "empty";
+            }else {
+                result.append(")");
+                repr = result.toString();
+            }
+            dirty = false;
+        }
+        return repr;
+    }
 }
