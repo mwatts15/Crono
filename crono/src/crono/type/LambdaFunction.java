@@ -40,16 +40,16 @@ public class LambdaFunction extends Function {
     
     public CronoType run(Visitor v, CronoType[] args) {
         Environment env = new Environment(environment);
-        for(int i = 0; i < args.length; ++i) {
-            env.put(arglist[i], args[i]);
-        }
+        //for(int i = 0; i < args.length; ++i) {
+        //    env.put(arglist[i], args[i]);
+        //}
         
-        v.pushEnv(env);
+        //v.pushEnv(env);
         CronoType ret = null;
         for(int i = 0; i < body.length; ++i) {
             ret = body[i].accept(v);
         }
-        v.popEnv();
+        //v.popEnv();
         
         return ret;
     }

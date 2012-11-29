@@ -16,13 +16,21 @@
     </exec>
     <javac srcdir="./src" destdir="./bin"/>
   </target>
+  
+  <target name="debug">
+    <mkdir dir="bin"/>
+    <exec dir="src/crono" executable="javacc" >
+      <arg line="Parser.jj"/>
+    </exec>
+    <javac srcdir="./src" destdir="./bin" debug="on" debuglevel="lines,source"/>
+  </target>
 
   <target name="main" depends="clean,crono" />
   
   <target name="packages" depends="crono">
     <javac srcdir="./packages" destdir="./packages" classpath="./bin" />
   </target>
-
+  
   <path id="test.classpath">
     <pathelement location="./bin/"/>
     <pathelement location="/usr/share/java/junit.jar"/>
