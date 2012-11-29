@@ -18,6 +18,7 @@ public class Crono {
         new Option('e', "show-environment"),
         new Option('h', "help"),
         new Option('p', "print-ast"),
+        new Option('P', "no-prelude"),
         new Option('q', "quiet"),
         new Option('s', "static"),
         new Option('t', "show-types"),
@@ -28,30 +29,29 @@ public class Crono {
     public static final String introstr =
         "Crono++ by Mark Watts, Carlo Vidal, Troy Varney (c) 2012\n";
     public static final String prompt = "> ";
+    public static final String prelude = "./prelude.lisp";
+    public static boolean showTypes = false;
+    public static boolean interactive = false;
+    public static boolean loadPrelude = true;
+    public static Visitor v = null;
+    public static List<String> files = new LinkedList<String>();
     
     private static CronoType getStatement(Parser p) {
-        /* This was supposed to loop the parser until it got a valid statement
-         * or hit EOF, but I can't get it to work quite right */
-        CronoType statement = null;
         System.out.print(prompt);
         try {
-            statement = p.statement();
+            CronoType statement = p.statement();
+            if(!interactive) {
+                System.out.println((statement == null) ? "" : statement);
+            }
+            return statement;
         }catch(ParseException pe) {
             System.err.println(pe);
-            statement = null;
         }
-        
-        return statement;
+        return null;
     }
     
-    public static void main(String[] args) {
-        boolean showTypes = false;
+    public static boolean parseOptions(Interpreter interp, String[] args) {
         OptionParser optparse = new OptionParser(args);
-        Interpreter interp = new Interpreter();
-        Visitor v = interp;
-        boolean interactive = (System.console() != null); /*< Java 6 feature */
-        List<String> files = new LinkedList<String>();
-        
         int opt = optparse.getopt(options);
         while(opt != -1) {
             switch(opt) {
@@ -59,23 +59,25 @@ public class Crono {
                 interp.dynamic(true);
                 break;
             case 'D':
-                interp.showEnv(true);
-                interp.printAST(true);
-                interp.trace(true);
+                interp.debug(true);
                 break;
             case 'e':
                 interp.showEnv(true);
                 break;
             case 'h':
                 System.err.println(helpstr);
-                return;
+                return false;
             case 'p':
                 interp.printAST(true);
+                break;
+            case 'P':
+                loadPrelude = false;
                 break;
             case 'q':
                 interp.showEnv(false);
                 interp.printAST(false);
                 interp.trace(false);
+                interp.debug(false);
                 break;
             case 's':
                 interp.dynamic(false);
@@ -92,7 +94,7 @@ public class Crono {
                 System.err.printf("Invalid option: %s\n",
                                   optparse.optchar);
                 System.err.println(helpstr);
-                return;
+                return false;
             }
             opt = optparse.getopt(options);
         }
@@ -100,8 +102,16 @@ public class Crono {
         for(int i = optparse.optind(); i < args.length; ++i) {
             files.add(args[i]);
         }
+        return true;
+    }
+    
+    public static void main(String[] args) {
+        Interpreter interp = new Interpreter();
+        v = interp;
+        interactive = (System.console() != null); /*< Java 6 feature */
         
-        Parser parser = null;
+        parseOptions(interp, args);
+        
         try {
             File package_dir = new File("./packages/");
             CronoPackage.initLoader(new URL[]{package_dir.toURI().toURL()});
@@ -109,55 +119,71 @@ public class Crono {
             System.err.printf("Crono: Could not open package directory!\n");
         }
         
-        if(interactive && files.size() == 0) {
-            parser = new Parser(new InputStreamReader(System.in));
-            System.out.println(introstr);
-            
-            boolean good = false;
-            CronoType statement = getStatement(parser);
-            while(statement != null) {
-                try{
-                    statement = statement.accept(v);
-                    if(showTypes) {
-                        System.out.printf("Result: %s [%s]\n",statement.repr(),
-                                          statement.typeId());
-                    }else {
-                        System.out.printf("Result: %s\n", statement.repr());
-                    }
-                }catch(InterpreterException re) {
-                    String message = re.getMessage();
-                    if(message != null) {
-                        System.err.println(message);
-                    }else {
-                        System.err.println("Unknown Interpreter Error!");
-                    }
-                }catch(RuntimeException re) {
-                    re.printStackTrace();
-                }
-                statement = getStatement(parser);
-            }
-            
-            System.out.println();
+        if(files.size() == 0) {
+            interactive();
         }else {
             for(String fname : files) {
-                try {
-                    parser = new Parser(new FileReader(fname));
-                }catch(FileNotFoundException fnfe) {
-                    System.err.printf("Could not find %s:\n  %s\n", fname,
-                                      fnfe.toString());
-                    continue;
-                }
-                
-                try {
-                    CronoType head = parser.program();
-                    head.accept(v);
-                } catch(ParseException pe) {
-                    System.err.printf("Error parsing crono file: %s\n  %s\n",
-                                      fname, pe);
-                }
-                
+                loadPrelude();
+                parseFile(fname);
                 v.reset(); /*< Reset the visitor for the next file */
             }
+        }
+    }
+    
+    public static void loadPrelude() {
+        if(loadPrelude) {
+            parseFile(prelude);
+        }
+    }
+    
+    public static void interactive() {
+        System.out.println(introstr);
+        loadPrelude();
+        
+        Parser parser = new Parser(new InputStreamReader(System.in));
+        CronoType statement = getStatement(parser);
+        while(statement != null) {
+            try{
+                statement = statement.accept(v);
+                if(showTypes) {
+                    System.out.printf("Result: %s [%s]\n",statement.repr(),
+                                      statement.typeId());
+                }else {
+                    System.out.printf("Result: %s\n", statement.repr());
+                }
+            }catch(InterpreterException re) {
+                String message = re.getMessage();
+                if(message != null) {
+                    System.err.println(message);
+                }else {
+                    System.err.println("Unknown Interpreter Error!");
+                }
+            }catch(RuntimeException re) {
+                re.printStackTrace();
+            }
+            statement = getStatement(parser);
+        }
+        
+        System.out.println();
+    }
+    
+    
+    public static void parseFile(String fname) {
+        Parser parser = null;
+        try {
+            parser = new Parser(new FileReader(fname));
+        }catch(FileNotFoundException fnfe) {
+            System.err.printf("Could not find file %s:\n  %s\n", fname, fnfe);
+            return;
+        }
+        try {
+            CronoType[] prog = parser.program();
+            for(int i = 0; i < prog.length; ++i) {
+                prog[i].accept(v);
+            }
+        }catch(ParseException pe) {
+            System.err.printf("Error parsing crono file: %s\n  %s\n",fname,pe);
+            return;
         }
     }
 }

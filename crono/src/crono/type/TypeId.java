@@ -27,11 +27,23 @@ public class TypeId {
     }
    
     public boolean equals(Object o) {
-        return ((o instanceof TypeId) &&
-                image.equals(((TypeId)o).image));
+        if(!(o instanceof TypeId)) {
+            return false;
+        }
+        if(image.equals(((TypeId)o).image)) {
+            return true;
+        }
+        if(parent != null) {
+            return parent.equals(o);
+        }
+        return false;
     }
     
     public String toString() {
         return image;
+    }
+    
+    public boolean complete() {
+        return (type != null);
     }
 }

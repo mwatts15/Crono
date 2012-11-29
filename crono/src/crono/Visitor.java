@@ -17,6 +17,8 @@ public abstract class Visitor {
     public abstract CronoType visit(Quote quote);
     public abstract void reset();
     
+    public abstract void dprint(String msg, Object... args);
+    
     /**
      * Should return a VisitorState that can be used by nodes being visited.
      * This is to make it possible to restore state from within functions:
