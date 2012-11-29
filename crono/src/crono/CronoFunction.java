@@ -159,6 +159,17 @@ public enum CronoFunction {
             return "define";
         }
     }),
+    DEFINED(new Function(new TypeId[]{Symbol.TYPEID}, Cons.TYPEID, 1,
+                         EvalType.NONE)
+    {
+        public CronoType run(Visitor v, CronoType[] args) {
+            Symbol s = (Symbol)args[0];
+            return (v.getEnv().get(s) == null) ? Nil.NIL : TruthValue.T;
+        }
+        public String toString() {
+            return "defined";
+        }
+    }),
     DEFUN(new Function(new TypeId[]{Symbol.TYPEID, Cons.TYPEID,
                                     CronoType.TYPEID}, LambdaFunction.TYPEID,
             3, true, EvalType.NONE)
