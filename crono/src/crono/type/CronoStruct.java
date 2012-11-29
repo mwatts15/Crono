@@ -8,6 +8,8 @@ import java.util.Map;
 import crono.InterpreterException;
 import crono.Visitor;
 
+import crono.inf.InfDatabase;
+
 /**
  * A structure, similar to C structures.
  * CronoStruct inherits from Function so that they can be accessed as if their
@@ -137,6 +139,9 @@ public class CronoStruct extends Function {
         this.parent = cs.parent;
         this.fields = new HashMap<String, Field>();
         this.fields.putAll(cs.fields);
+        for(Map.Entry<String,Field> a: fields.entrySet()){
+          System.out.printf("field %s = %s\n",a.getKey(),a.getValue().get());
+        }
         this.type = cs.type;
     }
     
@@ -159,6 +164,7 @@ public class CronoStruct extends Function {
                 throw new InterpreterException(_inv_field_name, name,
                                                args[0].toString());
             }
+            InfDatabase.clearEntailments();
             
             return field.put(args[1].accept(v));
         default:
