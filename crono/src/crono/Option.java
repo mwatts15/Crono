@@ -6,17 +6,17 @@ public class Option {
     public final boolean arg;
     
     public Option(char shortopt) {
-	this(shortopt, null, false);
+        this(shortopt, null, false);
     }
     public Option(char shortopt, boolean arg) {
-	this(shortopt, null, arg);
+        this(shortopt, null, arg);
     }
     public Option(char shortopt, String longopt) {
-	this(shortopt, longopt, false);
+        this(shortopt, longopt, false);
     }
     public Option(char shortopt, String longopt, boolean arg) {
-	this.shortopt = shortopt;
-	this.longopt = longopt;
-	this.arg = arg;
+        this.shortopt = shortopt;
+        this.longopt = longopt;
+        this.arg = arg;
     }
 }
