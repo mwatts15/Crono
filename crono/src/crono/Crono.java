@@ -57,9 +57,7 @@ public class Crono {
                 interp.dynamic(true);
                 break;
             case 'D':
-                interp.showEnv(true);
-                interp.printAST(true);
-                interp.trace(true);
+                interp.debug(true);
                 break;
             case 'e':
                 interp.showEnv(true);
@@ -77,6 +75,7 @@ public class Crono {
                 interp.showEnv(false);
                 interp.printAST(false);
                 interp.trace(false);
+                interp.debug(false);
                 break;
             case 's':
                 interp.dynamic(false);

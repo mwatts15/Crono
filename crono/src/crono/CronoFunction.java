@@ -269,6 +269,17 @@ public enum CronoFunction {
             "let: argument names numst be :symbol, got %s";
         private static final String _subst_not_pair =
             "let: arguments expect pairs; got %s";
+        private String argString(CronoType[] args) {
+            StringBuilder builder = new StringBuilder("");
+            if(args.length > 0) {
+                builder.append(args[0]);
+            }
+            for(int i = 1; i < args.length; ++i) {
+                builder.append(" ");
+                builder.append(args[i]);
+            }
+            return builder.toString();
+        }
         
         public CronoType run(Visitor v, CronoType[] args) {
             if(!(args[0] instanceof Cons)) {
@@ -316,7 +327,10 @@ public enum CronoFunction {
             largs = arglist.toArray(largs);
             
             LambdaFunction lambda = new LambdaFunction(lsyms,body,v.getEnv());
-            return lambda.run(v, largs); /*< -. - */
+            v.dprint("Converting let to lambda application: (%s %s)\n",
+                     lambda, argString(largs));
+            
+            return lambda.run(v, largs);
         }
         public String toString() {
             return "let";
@@ -333,6 +347,18 @@ public enum CronoFunction {
             "letrec: argument names numst be :symbol, got %s";
         private static final String _subst_not_pair =
             "let: arguments expect pairs; got %s";
+        
+        private String argString(CronoType[] args) {
+            StringBuilder builder = new StringBuilder("");
+            if(args.length > 0) {
+                builder.append(args[0]);
+            }
+            for(int i = 1; i < args.length; ++i) {
+                builder.append(" ");
+                builder.append(args[i]);
+            }
+            return builder.toString();
+        }
         
         public CronoType run(Visitor v, CronoType[] args) {
             if(!(args[0] instanceof Cons)) {
@@ -386,6 +412,8 @@ public enum CronoFunction {
             largs = arglist.toArray(largs);
             
             LambdaFunction lambda = new LambdaFunction(lsyms,body,v.getEnv());
+            v.dprint("Converting letrec to lambda application: (%s %s)\n",
+                     lambda, argString(largs));
             return lambda.run(v, largs); /*< -. - */
         }
         public String toString() {

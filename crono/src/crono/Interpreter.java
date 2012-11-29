@@ -26,6 +26,7 @@ public class Interpreter extends Visitor {
         public boolean dynamic, rDynamic;
         public boolean trace, rTrace;
         public boolean printAST, rPrintAST;
+        public boolean debug, rDebug;
         public Stack<Environment> envStack;
         
         public InterpreterState() {
@@ -39,6 +40,8 @@ public class Interpreter extends Visitor {
             rTrace = Interpreter.this.rTrace;
             printAST = Interpreter.this.printAST;
             rPrintAST = Interpreter.this.rPrintAST;
+            debug = Interpreter.this.debug;
+            rDebug = Interpreter.this.rDebug;
             
             envStack = new Stack<Environment>();
             envStack.addAll(Interpreter.this.envStack);
@@ -59,6 +62,7 @@ public class Interpreter extends Visitor {
     protected boolean dynamic, rDynamic;
     protected boolean trace, rTrace;
     protected boolean printAST, rPrintAST;
+    protected boolean debug, rDebug;
     protected EvalType eval;
     
     protected StringBuilder indent;
@@ -77,6 +81,7 @@ public class Interpreter extends Visitor {
         dynamic(false);
         trace(false);
         printAST(false);
+        debug(false);
         
         lambdaDepth = 0;
         
@@ -129,6 +134,14 @@ public class Interpreter extends Visitor {
         printAST = on;
         rPrintAST = on;
     }
+    /**
+     * Turns debug printing on or off.
+     * @param on If the Interpreter should print dprint messages.
+     */
+    public void debug(boolean on) {
+        debug = on;
+        rDebug = on;
+    }
     
     /**
      * Helper method to indent correctly.
@@ -159,6 +172,7 @@ public class Interpreter extends Visitor {
         dynamic = rDynamic;
         trace = rTrace;
         printAST = rPrintAST;
+        debug = rDebug;
     }
     /**
      * Turns off all options that only affect information that is printed.
@@ -345,7 +359,9 @@ public class Interpreter extends Visitor {
             }
             if(arglen > nargs && !fun.variadic) {
                 eval = reserve;
-                except(new TooManyArgsException(fun, arglen, nargs));
+                CronoType[] argarray =
+                    args.toArray(new CronoType[args.size()]);
+                except(new TooManyArgsException(fun, arglen, nargs, argarray));
             }
             
             /* Full evaluation */
@@ -353,13 +369,16 @@ public class Interpreter extends Visitor {
                 CronoType[] argarray =
                     args.toArray(new CronoType[args.size()]);
                 
-                if(fun instanceof LambdaFunction) {
+                boolean islfun = (fun instanceof LambdaFunction);
+                if(islfun) {
                     LambdaFunction lfun = (LambdaFunction)fun;
                     if(dynamic) {
                         lfun = new LambdaFunction(lfun.arglist, lfun.body,
                                                   getEnv());
                     }
                     fun = substitute(lfun, argarray);
+                    argarray = new CronoType[0];
+                    args.clear();
                 }
                 
                 TypeId[] types = new TypeId[args.size()];
@@ -377,14 +396,18 @@ public class Interpreter extends Visitor {
                     }
                 }
                 
-                optionsOff();
+                if(!islfun) {
+                    optionsOff();
+                }
                 CronoType fresult = null;
                 try {
                     fresult = fun.run(this, args.toArray(argarray));
                 }catch(RuntimeException re) {
                     except(re);
                 }
-                resetOptions();
+                if(!islfun) {
+                    resetOptions();
+                }
                 
                 deindent();
                 traceResult(fresult);
@@ -508,6 +531,12 @@ public class Interpreter extends Visitor {
         }
     }
     
+    public void dprint(String message, Object... args) {
+        if(debug) {
+            System.out.printf(message, args);
+        }
+    }
+    
     /* Cut down on code duplication. */
     private LambdaFunction substitute(LambdaFunction lfun, CronoType[] args) {
         EvalType reserve = eval;
@@ -541,8 +570,8 @@ public class Interpreter extends Visitor {
         CronoType[] body = new CronoType[lfun.body.length];
         int remain = lfun.arglist.length - args.length;
         if(remain < 0) {
-            throw new TooManyArgsException(lfun, lfun.arglist.length,
-                                           args.length);
+            except(new TooManyArgsException(lfun, lfun.arglist.length,
+                                            args.length, args));
         }
         Symbol[] largs = new Symbol[remain];
         
