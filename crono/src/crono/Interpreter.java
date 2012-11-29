@@ -49,9 +49,6 @@ public class Interpreter extends Visitor {
         }
     }
     
-    private static final String _scope_err = "No object %s in scope";
-    private static final String _too_many_args =
-        "Too many arguments to %s: %d/%d recieved";
     private static final String _type_scope_err = "No type %s in scope";
     private static final String _type_mismatch =
         "Function '%s' expected arguments %s; got %s";
@@ -67,6 +64,10 @@ public class Interpreter extends Visitor {
     protected StringBuilder indent;
     protected Stack<Environment> envStack;
     
+    /* Used for keeping track of how deep we are down the nested-lambda rabbit
+     * hole. */
+    private int lambdaDepth;
+    
     /**
      * Creates a new Interpreter with default option values.
      */
@@ -76,6 +77,8 @@ public class Interpreter extends Visitor {
         dynamic(false);
         trace(false);
         printAST(false);
+        
+        lambdaDepth = 0;
         
         indent = new StringBuilder();
         eval = Function.EvalType.FULL;
@@ -138,8 +141,12 @@ public class Interpreter extends Visitor {
      */
     protected void deindent() {
         int size = indent.length();
-        indent.deleteCharAt(size - 1);
-        indent.deleteCharAt(size - 2);
+        if(size < 2) {
+            indent = new StringBuilder();
+        }else {
+            indent.deleteCharAt(size - 1);
+            indent.deleteCharAt(size - 2);
+        }
     }
     
     /**
@@ -271,7 +278,6 @@ public class Interpreter extends Visitor {
         CronoType value = iter.next().accept(this);
         if(value instanceof Function) {
             Function fun = ((Function)value);
-            
             EvalType reserve = eval;
             
             eval = fun.eval;
@@ -288,8 +294,11 @@ public class Interpreter extends Visitor {
             int nargs = fun.arity;
             if(arglen < nargs) {
                 if(arglen == 0) {
-                    /* Special case -- we don't have to do anything to the
-                     * function to return it properly. */
+                    if(fun instanceof LambdaFunction) {
+                        /* We technically have to substitute these */
+                        fun = substitute((LambdaFunction)fun,new CronoType[0]);
+                    }
+                    
                     deindent();
                     traceResult(fun);
                     printEnvironment();
@@ -298,49 +307,10 @@ public class Interpreter extends Visitor {
                 
                 /* Curry it */
                 if(fun instanceof LambdaFunction) {
+                    /* Lambdas are easy - just use the substitute method */
                     LambdaFunction lfun = ((LambdaFunction)fun);
-                    Environment env = getEnv();
-                    if(!dynamic) {
-                        /* Use the lambda's stored environment */
-                        env = lfun.environment;
-                    }
-                    /* We want to preserve the current environment */
-                    env = new Environment(false);
-                    
-                    /* Put known values into the new environment */
-                    for(int i = 0; i < arglen; ++i) {
-                        env.put(lfun.arglist[i], args.get(i));
-                    }
-                    /* Create new argument list and remove remaining args from
-                     * the new environment */
-                    List<Symbol> largs = new ArrayList<Symbol>();
-                    for(int i = arglen; i < lfun.arglist.length; ++i) {
-                        largs.add(lfun.arglist[i]);
-                        env.remove(lfun.arglist[i]);
-                    }
-                    
-                    /* Evaluate the body as much as possible */
-                    reserve = eval;
-                    
-                    CronoType[] lbody = new CronoType[lfun.body.length];
-                    optionsOff(); /*< Extra indent for clarity */
-                    {
-                        eval = EvalType.PARTIAL;
-                        pushEnv(env);
-                        for(int i = 0; i < lfun.body.length; ++i) {
-                            lbody[i] = lfun.body[i].accept(this);
-                        }
-                        eval = reserve;
-                        popEnv();
-                    }
-                    resetOptions(); /*< Set options back to what they were */
-                    
-                    /* Return the new, partially evaluated lambda */
-                    Symbol[] arglist = new Symbol[largs.size()];
-                    
-                    LambdaFunction clfun;
-                    clfun = new LambdaFunction(largs.toArray(arglist), lbody,
-                                               lfun.environment);
+                    CronoType[] larr = new CronoType[arglen];
+                    LambdaFunction clfun = substitute(lfun,args.toArray(larr));
                     deindent();
                     traceResult(clfun);
                     printEnvironment();
@@ -375,41 +345,31 @@ public class Interpreter extends Visitor {
             }
             if(arglen > nargs && !fun.variadic) {
                 eval = reserve;
-                except(new InterpreterException(_too_many_args, fun, arglen,
-                                                nargs));
+                except(new TooManyArgsException(fun, arglen, nargs));
             }
             
             /* Full evaluation */
             if(eval == EvalType.FULL) {
-                if(fun instanceof LambdaFunction && dynamic) {
-                    /* We have to trick the lambda function if we want dynamic
-                     * scoping. I hate making so many objects left and right,
-                     * but this is the easiest way to do what I want here. */
-                    LambdaFunction lfun = ((LambdaFunction)fun);
-                    lfun = new LambdaFunction(lfun.arglist, lfun.body,
-                                              getEnv());
-                    CronoType[] argarray = new CronoType[args.size()];
-                    
-                    optionsOff();
-                    CronoType lresult = lfun.run(this, args.toArray(argarray));
-                    resetOptions();
-                    
-                    deindent();
-                    traceResult(lresult);
-                    printEnvironment();
-                    
-                    return lresult;
+                CronoType[] argarray =
+                    args.toArray(new CronoType[args.size()]);
+                
+                if(fun instanceof LambdaFunction) {
+                    LambdaFunction lfun = (LambdaFunction)fun;
+                    if(dynamic) {
+                        lfun = new LambdaFunction(lfun.arglist, lfun.body,
+                                                  getEnv());
+                    }
+                    fun = substitute(lfun, argarray);
                 }
                 
-                CronoType[] argarray = new CronoType[args.size()];
-                argarray = args.toArray(argarray);
                 TypeId[] types = new TypeId[args.size()];
                 for(int i = 0; i < types.length; ++i) {
                     types[i] = argarray[i].typeId();
                 }
-                int check = Math.min(argarray.length,fun.args.length);
-                for(int i = 0; i < check; ++i) {
-                    if(!(fun.args[i].isType(argarray[i]))) {
+                int check = 0;
+                for(int i = 0; i < fun.args.length; ++i) {
+                    check = Math.min(i, argarray.length);
+                    if(!(fun.args[i].isType(argarray[check]))) {
                         String argstr = Arrays.toString(types);
                         String expected = Arrays.toString(fun.args);
                         except(new InterpreterException(_type_mismatch, fun,
@@ -418,8 +378,12 @@ public class Interpreter extends Visitor {
                 }
                 
                 optionsOff();
-                CronoType fresult;
-                fresult = ((Function)value).run(this, args.toArray(argarray));
+                CronoType fresult = null;
+                try {
+                    fresult = fun.run(this, args.toArray(argarray));
+                }catch(RuntimeException re) {
+                    except(re);
+                }
                 resetOptions();
                 
                 deindent();
@@ -479,7 +443,7 @@ public class Interpreter extends Visitor {
             t = getEnv().get((Symbol)a);
             if(t == null) {
                 if(eval == EvalType.FULL) {
-                    except(new InterpreterException(_scope_err, a.repr()));
+                    except(new SymbolScopeException((Symbol)a));
                 }
                 t = a;
             }
@@ -491,7 +455,7 @@ public class Interpreter extends Visitor {
             t = getEnv().getType((CronoTypeId)t);
             if(t == null) {
                 if(eval == EvalType.FULL) {
-                    except(new InterpreterException(_type_scope_err, a));
+                    except(new TypeScopeException(((CronoTypeId)res).type));
                 }
                 t = res; /*< Revert to symbol resolution */
             }
@@ -542,6 +506,66 @@ public class Interpreter extends Visitor {
         for(int i = 0; i < size; ++i) {
             envStack.set(i, new Environment(envStack.get(i)));
         }
+    }
+    
+    /* Cut down on code duplication. */
+    private LambdaFunction substitute(LambdaFunction lfun, CronoType[] args) {
+        EvalType reserve = eval;
+        LambdaFunction ret = null;
+        
+        /* Everything we do here should be undone after substutition. */
+        lambdaDepth++;
+        if(lambdaDepth <= 1) {
+            optionsOff();
+            eval = EvalType.PARTIAL;
+            pushEnv(new Environment(false));
+            ret = doSubst(lfun, args);
+            popEnv();
+            eval = reserve;
+            resetOptions();
+        }else {
+            /* If this is not the first time, we need to create a copy of the
+             * environment. This could be optimized by using some form of
+             * transactional database instead of a map for the Environment.
+             */
+            pushEnv(new Environment(getEnv()));
+            ret = doSubst(lfun, args);
+            popEnv();
+        }
+        lambdaDepth--;
+        return ret;
+    }
+    private LambdaFunction doSubst(LambdaFunction lfun, CronoType[] args) {
+        /* Initialization for substitution */
+        Environment env = getEnv();
+        CronoType[] body = new CronoType[lfun.body.length];
+        int remain = lfun.arglist.length - args.length;
+        if(remain < 0) {
+            throw new TooManyArgsException(lfun, lfun.arglist.length,
+                                           args.length);
+        }
+        Symbol[] largs = new Symbol[remain];
+        
+        /* Put variables we have in the substitution env */
+        for(int i = 0; i < args.length; ++i) {
+            env.put(lfun.arglist[i], args[i]);
+        }
+        
+        /* Remove symbols that this lambda defines but doesn't have. */
+        Symbol missing = null;
+        for(int i = 0; i < largs.length; ++i) {
+            missing = lfun.arglist[args.length + i];
+            largs[i] = missing;
+            env.remove(missing);
+        }
+        
+        /* Loop over the body and have the interpreter visit them */
+        for(int i = 0; i < body.length; ++i) {
+            /* This may call substitute */
+            body[i] = lfun.body[i].accept(this);
+        }
+        
+        return new LambdaFunction(largs, body, lfun.environment);
     }
     
     public Environment getEnv() {

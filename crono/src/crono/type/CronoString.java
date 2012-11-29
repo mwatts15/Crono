@@ -17,6 +17,18 @@ public class CronoString extends CronoArray {
     protected StringBuilder data;
     protected int size;
     
+    public static CronoString fromString(String str) {
+        CronoString s = new CronoString();
+        s.data.append(str);
+        s.size = str.length();
+        return s;
+    }
+    
+    public CronoString() {
+        super(CronoCharacter.TYPEID);
+        data = new StringBuilder();
+        size = 0;
+    }
     public CronoString(String str) {
         super(CronoCharacter.TYPEID);
         
