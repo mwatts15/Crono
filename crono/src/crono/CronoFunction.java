@@ -986,6 +986,15 @@ public enum CronoFunction {
             return "raise";
         }
     }),
+    TYPEOF(new Function(new TypeId[]{CronoType.TYPEID}, CronoTypeId.TYPEID, 1)
+    {
+        public CronoType run(Visitor v, CronoType[] args) {
+            return new CronoTypeId(args[0].typeId());
+        }
+        public String toString() {
+            return "typeof";
+        }
+    }),
     ;
     
     public final Function function;
