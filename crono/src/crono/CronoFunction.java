@@ -308,73 +308,75 @@ public enum CronoFunction {
 		//return "float";
 	//}
     //}),
-    //LOAD(new Function(new TypeId[]{CronoString.TYPEID}, CronoType.TYPEID, 1)
-    //{
-	//private static final String _bad_type =
-		//"LOAD: expected :string, got %s";
-	//private static final String _file_not_found =
-		//"LOAD: could not open file %s";
-	//private static final String _bad_parse =
-		//"LOAD: error parsing file:\n%s";
+    LOAD(new Function(new TypeId[]{CronoString.TYPEID}, CronoType.TYPEID, 1)
+    {
+    private static final String _bad_type =
+        "LOAD: expected :string, got %s";
+    private static final String _file_not_found =
+        "LOAD: could not open file %s";
+    private static final String _bad_parse =
+        "LOAD: error parsing file:\n%s";
 
-	//private CronoType loadLisp(Visitor v, String fname) {
-		//InputStream is = null;
-		//try {
-		//is = new FileInputStream(fname);
-		//}catch(FileNotFoundException fnfe) {
-		//throw new InterpreterException(_file_not_found,
-						   //fnfe.getMessage());
-		//}
-		//Parser p = new Parser(is);
-		//CronoType program = null;
-		//try {
-		//program = p.program();
-		//}catch(ParseException pe) {
-		//throw new InterpreterException(_bad_parse, pe.getMessage());
-		//}
-		//return program.accept(v);
-	//}
-	//private CronoType loadPackage(Visitor v, String fname) {
-		//CronoPackage pack = CronoPackage.load(fname);
-		//Environment env = v.getEnv();
-		//Function[] funcs = pack.functions();
-		//if(funcs != null) {
-		//for(Function f : funcs) {
-			//env.put(new Symbol(f.toString()), f);
-		//}
-		//}
-		//TypeId[] types = pack.types();
-		//if(types != null) {
-		//for(TypeId t : types) {
-			//env.put(t);
-		//}
-		//}
+    private CronoType loadLisp(Visitor v, String fname) {
+        InputStream is = null;
+        try {
+        is = new FileInputStream(fname);
+        }catch(FileNotFoundException fnfe) {
+        throw new InterpreterException(_file_not_found,
+                           fnfe.getMessage());
+        }
+        Parser p = new Parser(is);
+        CronoType program = null;
+        try {
+        program = p.program();
+        }catch(ParseException pe) {
+        throw new InterpreterException(_bad_parse, pe.getMessage());
+        }
+        return program.accept(v);
+    }
+    private CronoType loadPackage(Visitor v, String fname) {
+        CronoPackage pack = CronoPackage.load(fname);
+        Environment env = v.getEnv();
+        Function[] funcs = pack.functions();
+        if(funcs != null) {
+        for(Function f : funcs) {
+            env.put(new Symbol(f.toString()), f);
+        }
+        }
+        TypeId[] types = pack.types();
+        if(types != null) {
+        for(TypeId t : types) {
+            env.put(t);
+        }
+        }
 
-		//CronoPackage.SymbolPair[] syms = pack.symbols();
-		//if(syms != null) {
-		//for(CronoPackage.SymbolPair s : syms) {
-			//env.put(s.sym, s.type);
-		//}
-		//}
+        CronoPackage.SymbolPair[] syms = pack.symbols();
+        if(syms != null) {
+        for(CronoPackage.SymbolPair s : syms) {
+            env.put(s.sym, s.type);
+        }
+        }
 
-		//return TruthValue.T;
-	//}
+        return TruthValue.T;
+    }
 
-        //public CronoType run(Visitor v, List<CronoType> args) {
-		//if(!(args[0] instanceof CronoString)) {
-		//throw new InterpreterException(_bad_type, args[0].typeId());
-		//}
-		//String fname = ((CronoString)args[0]).toString();
-		//String lname = fname.toLowerCase();
-		//if(lname.endsWith(".lisp") || lname.endsWith(".crono")) {
-		//return loadLisp(v, fname);
-		//}
-		//return loadPackage(v, fname);
-        //}
-        //public String toString() {
-		//return "load";
-        //}
-    //}),
+        public CronoType run(Visitor v, List<CronoType> args) {
+            CronoType maybe_name = args.remove(0);
+        if(!(maybe_name instanceof CronoString)) {
+        throw new InterpreterException(_bad_type, maybe_name.typeId());
+        }
+
+        String fname = ((CronoString)maybe_name).toString();
+        String lname = fname.toLowerCase();
+        if(lname.endsWith(".lisp") || lname.endsWith(".crono")) {
+        return loadLisp(v, fname);
+        }
+        return loadPackage(v, fname);
+        }
+        public String toString() {
+        return "load";
+        }
+    }),
     //PRINT(new Function(new TypeId[]{CronoType.TYPEID}, Nil.TYPEID, 1, true)
     //{
         //public CronoType run(Visitor v, List<CronoType> args) {

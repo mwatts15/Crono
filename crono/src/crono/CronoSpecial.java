@@ -67,7 +67,7 @@ public enum CronoSpecial {
         return "define";
     }
     }),
-    //UNDEFINE(new Function(new TypeId[]{Symbol.TYPEID}, Nil.TYPEID, 1,
+    //UNDEFINE(new Special(new TypeId[]{Symbol.TYPEID}, Nil.TYPEID, 1,
 			  //EvalType.NONE)
     //{
 	//private static final String _bad_type =
@@ -97,7 +97,7 @@ public enum CronoSpecial {
 		//return "undef";
 	//}
     //}),
-    //LET(new Function(new TypeId[]{Cons.TYPEID, CronoType.TYPEID},
+    //LET(new Special(new TypeId[]{Cons.TYPEID, CronoType.TYPEID},
 			 //CronoType.TYPEID, 2, true, EvalType.NONE)
     //{
         //private static final String _subst_list_type =
@@ -153,21 +153,23 @@ public enum CronoSpecial {
         //return "let";
     //}
     //}),
-    //IF(new Function(new TypeId[]{CronoType.TYPEID, CronoType.TYPEID,
-				 //CronoType.TYPEID},
-		//CronoType.TYPEID, 3, EvalType.NONE)
-    //{
-	//public CronoType run(Visitor v, List<CronoType> args) {
-		//CronoType check = args[0].accept(v);
-		//if(check != Nil.NIL) {
-		//return args[1].accept(v);
-		//}
-		//return args[2].accept(v);
-	//}
-        //public String toString() {
-		//return "if";
-	//}
-    //}),
+    IF(new Special(new TypeId[]{CronoType.TYPEID, CronoType.TYPEID,
+                 CronoType.TYPEID},
+        CronoType.TYPEID, 3, EvalType.NONE)
+    {
+    public CronoType run(Visitor v, List<CronoType> args) {
+        CronoType condition = args.remove(0).accept(v);
+        CronoType true_value = args.remove(0);
+        CronoType false_value = args.remove(0);
+        if(condition != Nil.NIL) {
+        return true_value.accept(v);
+        }
+        return false_value.accept(v);
+    }
+        public String toString() {
+        return "if";
+    }
+    }),
     ;
     public final Special special;
     private CronoSpecial(Special spec) {
