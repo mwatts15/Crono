@@ -139,9 +139,6 @@ public class CronoStruct extends Function {
         this.parent = cs.parent;
         this.fields = new HashMap<String, Field>();
         this.fields.putAll(cs.fields);
-        for(Map.Entry<String,Field> a: fields.entrySet()){
-          System.out.printf("field %s = %s\n",a.getKey(),a.getValue().get());
-        }
         this.type = cs.type;
     }
     

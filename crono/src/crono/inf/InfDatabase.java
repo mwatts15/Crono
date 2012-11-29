@@ -9,7 +9,7 @@ public class InfDatabase{
 	
 	public static boolean insert(InfTriple triple){
 		if (elements.contains(triple)){
-			System.out.println("Duplicate of "+triple+" detected!");
+			//System.out.println("Duplicate of "+triple+" detected!");
 			return false;
 		}
 		return elements.add(triple);
@@ -19,16 +19,21 @@ public class InfDatabase{
     InfClass nameClass = new InfClass(name);
     insert(new InfTriple(nameClass,new Rdf.Type(),new InfStruct.structDef()));
     for(Map.Entry<String,CronoStruct.Field> entry: fields.entrySet()){
-      //CronoStruct.Field field = entry.getValue();
       String fieldname = entry.getKey();
       insert(new InfTriple(nameClass,new InfStruct.HasA(),new InfClass(fieldname)));
     }
-    System.out.println("Inserted defstruct: "+printdb());
     return;
   }
   
+  public static void insertStructInstance(Symbol name,CronoStruct value){
+	InfDatabase.insert(new InfTriple(
+							new InfClass(name.toString()),
+							new InfStruct.IsA(),
+							findName(value.toString())));
+	return;
+  }
+  
   public static void clearEntailments(){
-    //System.out.println("DESTROY");
     for(Iterator i = elements.iterator();i.hasNext();){
       InfTriple t = (InfTriple)i.next();
       if(t.isEntailed())
@@ -41,9 +46,23 @@ public class InfDatabase{
 		return elements;
 	}
 	
-	public static ArrayList<InfTriple> seek(InfClass subj,InfClass pred, InfClass obj){
-		ArrayList<InfTriple> ret = new ArrayList<InfTriple>();
+	public static InfClass findName(String name){
 		for(Iterator i = elements.iterator();i.hasNext();){
+			InfTriple t = (InfTriple)i.next();
+			if(t.getSubject().toString().equals(name)) return t.getSubject();
+			if(t.getPredicate().toString().equals(name)) return t.getPredicate();
+			if(t.getObject().toString().equals(name)) return t.getObject();
+		}
+		return null;
+	}
+	
+	public static ArrayList<InfTriple> seek(InfClass subj,InfClass pred, InfClass obj){
+		return seek(subj,pred,obj,elements);		
+	}
+	
+	public static ArrayList<InfTriple> seek(InfClass subj,InfClass pred, InfClass obj, ArrayList<InfTriple> db){
+		ArrayList<InfTriple> ret = new ArrayList<InfTriple>();
+		for(Iterator i = db.iterator();i.hasNext();){
 			InfTriple t = (InfTriple)i.next();
 				if ((subj==null || subj.equals(t.getSubject()))
 				  &&(pred==null || pred.equals(t.getPredicate()))
@@ -62,7 +81,8 @@ public class InfDatabase{
 		//(defined name, hasa, fieldname)
 		//->(defined name, fieldname, fieldvalue)
 		  if(seek(t.getSubject(),t.getObject(),null).isEmpty()){
-			CronoStruct parentStruct = env.getStruct(new Symbol(t.getSubject().getName()));
+			CronoStruct parentStruct = (CronoStruct) env.get(new Symbol(t.getSubject().getName()));
+			if(parentStruct == null) parentStruct = env.getStruct(new Symbol(t.getSubject().getName()));
 			InfClass c = new InfClass(parentStruct.getField(t.getObject().getName()).get().toString());
 			ret.add(new InfTriple(t.getSubject(),t.getObject(),c,true));
 		  }
@@ -76,13 +96,12 @@ public class InfDatabase{
 		boolean changed;
 		ArrayList<InfTriple> copy;
 		do{
-			//System.out.println("Entailing...");
 			elements.addAll(getStructFields(env));
 			copy = new ArrayList<InfTriple>(elements);
 			changed = false;
 			for(Iterator i = elements.iterator();i.hasNext();){
 				InfTriple t = (InfTriple)i.next();
-        t.getPredicate().fn(t,copy);
+				t.getPredicate().fn(t,copy);
 			}
       boolean exists = false;
       for(Iterator j = copy.iterator();j.hasNext();){

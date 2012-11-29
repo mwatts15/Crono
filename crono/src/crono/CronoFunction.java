@@ -139,6 +139,12 @@ public enum CronoFunction {
 	    }
 	    CronoType value = args[1].accept(v);
 	    v.getEnv().put(((Symbol)args[0]), value);
+		//> (defstruct abc ())
+		//> (define lol (struct abc))
+		if(value instanceof CronoStruct){
+			InfDatabase.insertStructInstance((Symbol)args[0],(CronoStruct)value);
+		}
+		
 	    return value;
 	}
 	public String toString() {
@@ -768,18 +774,28 @@ public enum CronoFunction {
 	    return "eval";
         }
     }),
-    ENTAIL(new Function(new TypeId[]{}, TruthValue.TYPEID, 0)
+    ENTAIL(new Function(new TypeId[]{}, Nil.TYPEID, 0)
     {
       public CronoType run(Visitor v, CronoType[] args) {
         Environment env = v.getEnv();
         InfDatabase.entail(env);
-        System.out.println(InfDatabase.printdb());
-        return TruthValue.T;
+        //System.out.println(InfDatabase.printdb());
+        return Nil.NIL;
       }
       public String toString(){
         return "entail";
       }
     }),
+	PRINTDB(new Function(new TypeId[]{}, Nil.TYPEID, 0)
+	{
+		public CronoType run(Visitor v, CronoType[] args){
+			System.out.println(InfDatabase.printdb());
+			return Nil.NIL;
+		}
+		public String toString(){
+			return "printdb";
+		}
+	}),
     ;
     
     public final Function function;

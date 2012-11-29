@@ -10,8 +10,8 @@ public class Rdfs{
 		Class = new Class();
 	}*/
 	private static enum c{
-		subClassOf(-9,"rdfs:subClassOf"),
-		Class(-2,"rdfs:Class");
+		subClassOf(-20,"rdfs:subClassOf"),
+		Class(-21,"rdfs:Class");
 		public final int id; 
 		public final String name;
 		private c(int id, String name){this.id=id;this.name=name;}
