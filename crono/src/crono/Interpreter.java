@@ -474,7 +474,7 @@ public class Interpreter extends Visitor {
         }
         /* Not else-if, so that we perform a double-resolution on a symbol that
          * represents a TypeId */
-        if(t instanceof CronoTypeId) {
+        if(t instanceof CronoTypeId && !((CronoTypeId)t).complete()) {
             CronoType res = t; /*< Save symbol resolution */
             t = getEnv().getType((CronoTypeId)t);
             if(t == null) {
