@@ -2,11 +2,11 @@ package crono.type;
 
 public abstract class CronoArray extends Atom {
     public static final TypeId TYPEID = new TypeId(":array", CronoArray.class,
-						   Atom.TYPEID);
+                                                   Atom.TYPEID);
     
     protected TypeId accept;
     public CronoArray(TypeId accept) {
-	this.accept = accept;
+        this.accept = accept;
     }
     
     public abstract int size();
@@ -17,6 +17,6 @@ public abstract class CronoArray extends Atom {
     public abstract CronoType concat(CronoArray array);
     
     public TypeId accept() {
-	return accept;
+        return accept;
     }
 }

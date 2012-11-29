@@ -51,10 +51,10 @@ public class Interpreter extends Visitor {
     
     private static final String _scope_err = "No object %s in scope";
     private static final String _too_many_args =
-	"Too many arguments to %s: %d/%d recieved";
+        "Too many arguments to %s: %d/%d recieved";
     private static final String _type_scope_err = "No type %s in scope";
     private static final String _type_mismatch =
-	"Function '%s' expected arguments %s; got %s";
+        "Function '%s' expected arguments %s; got %s";
     private static final String _indent_level = "  ";
     
     protected boolean showEnv, rShowEnv;
@@ -71,17 +71,17 @@ public class Interpreter extends Visitor {
      * Creates a new Interpreter with default option values.
      */
     public Interpreter() {
-	showEnv(false);
-	showClosure(false);
-	dynamic(false);
-	trace(false);
-	printAST(false);
-	
-	indent = new StringBuilder();
-	eval = Function.EvalType.FULL;
-	
-	envStack = new Stack<Environment>();
-	reset(); /*< Set up initial environment and types */
+        showEnv(false);
+        showClosure(false);
+        dynamic(false);
+        trace(false);
+        printAST(false);
+        
+        indent = new StringBuilder();
+        eval = Function.EvalType.FULL;
+        
+        envStack = new Stack<Environment>();
+        reset(); /*< Set up initial environment and types */
     }
     
     /**
@@ -131,15 +131,15 @@ public class Interpreter extends Visitor {
      * Helper method to indent correctly.
      */
     protected void indent() {
-	indent.append(_indent_level);
+        indent.append(_indent_level);
     }
     /**
      * Helper method to de-indent correctly.
      */
     protected void deindent() {
-	int size = indent.length();
-	indent.deleteCharAt(size - 1);
-	indent.deleteCharAt(size - 2);
+        int size = indent.length();
+        indent.deleteCharAt(size - 1);
+        indent.deleteCharAt(size - 2);
     }
     
     /**
@@ -219,8 +219,8 @@ public class Interpreter extends Visitor {
      * Resets the Interpreter to it's default state, including the environment.
      */
     public void reset() {
-	envStack.clear();
-	pushEnv(new Environment());
+        envStack.clear();
+        pushEnv(new Environment());
         resetOptions();
     }
     
@@ -248,79 +248,79 @@ public class Interpreter extends Visitor {
      * @return The value obtained by visiting this node.
      */
     public CronoType visit(Cons c) {
-	if(eval == EvalType.NONE) {
+        if(eval == EvalType.NONE) {
             printASTNode("List Node");
             traceVisit(c);
             traceResult(c);
             printEnvironment();
-	    return c;
-	}
-	
-	Iterator<CronoType> iter = c.iterator();
-	if(!(iter.hasNext())) {
+            return c;
+        }
+        
+        Iterator<CronoType> iter = c.iterator();
+        if(!(iter.hasNext())) {
             printASTNode("Nil Node");
             traceVisit(Nil.NIL);
             traceResult(Nil.NIL);
             printEnvironment();
-	    return c; /*< C is an empty list (may be Nil or T) */
-	}
-	
+            return c; /*< C is an empty list (may be Nil or T) */
+        }
+        
         printASTNode("Function Application Node");
         traceVisit(c);
-	indent();
-	CronoType value = iter.next().accept(this);
-	if(value instanceof Function) {
-	    Function fun = ((Function)value);
-	    
-	    EvalType reserve = eval;
+        indent();
+        CronoType value = iter.next().accept(this);
+        if(value instanceof Function) {
+            Function fun = ((Function)value);
             
-	    eval = fun.eval;
-	    if(eval.level > reserve.level) {
-		eval = reserve;
-	    }
-	    List<CronoType> args = new ArrayList<CronoType>();
-	    while(iter.hasNext()) {
-		args.add(iter.next().accept(this));
-	    }
-	    eval = reserve;
-	    
-	    int arglen = args.size();
-	    int nargs = fun.arity;
-	    if(arglen < nargs) {
-		if(arglen == 0) {
-		    /* Special case -- we don't have to do anything to the
-		     * function to return it properly. */
-		    deindent();
+            EvalType reserve = eval;
+            
+            eval = fun.eval;
+            if(eval.level > reserve.level) {
+                eval = reserve;
+            }
+            List<CronoType> args = new ArrayList<CronoType>();
+            while(iter.hasNext()) {
+                args.add(iter.next().accept(this));
+            }
+            eval = reserve;
+            
+            int arglen = args.size();
+            int nargs = fun.arity;
+            if(arglen < nargs) {
+                if(arglen == 0) {
+                    /* Special case -- we don't have to do anything to the
+                     * function to return it properly. */
+                    deindent();
                     traceResult(fun);
                     printEnvironment();
-		    return fun;
-		}
-		
-		/* Curry it */
-		if(fun instanceof LambdaFunction) {
-		    LambdaFunction lfun = ((LambdaFunction)fun);
-		    Environment env = getEnv();
-		    if(!dynamic) {
-			/* Use the lambda's stored environment */
-			env = lfun.environment;
-		    }
-		    /* We want to preserve the current environment */
-		    env = new Environment(false);
-		    
-		    /* Put known values into the new environment */
-		    for(int i = 0; i < arglen; ++i) {
-			env.put(lfun.arglist[i], args.get(i));
-		    }
-		    /* Create new argument list and remove remaining args from
-		     * the new environment */
-		    List<Symbol> largs = new ArrayList<Symbol>();
-		    for(int i = arglen; i < lfun.arglist.length; ++i) {
-			largs.add(lfun.arglist[i]);
-			env.remove(lfun.arglist[i]);
-		    }
-		    
-		    /* Evaluate the body as much as possible */
-		    reserve = eval;
+                    return fun;
+                }
+                
+                /* Curry it */
+                if(fun instanceof LambdaFunction) {
+                    LambdaFunction lfun = ((LambdaFunction)fun);
+                    Environment env = getEnv();
+                    if(!dynamic) {
+                        /* Use the lambda's stored environment */
+                        env = lfun.environment;
+                    }
+                    /* We want to preserve the current environment */
+                    env = new Environment(false);
+                    
+                    /* Put known values into the new environment */
+                    for(int i = 0; i < arglen; ++i) {
+                        env.put(lfun.arglist[i], args.get(i));
+                    }
+                    /* Create new argument list and remove remaining args from
+                     * the new environment */
+                    List<Symbol> largs = new ArrayList<Symbol>();
+                    for(int i = arglen; i < lfun.arglist.length; ++i) {
+                        largs.add(lfun.arglist[i]);
+                        env.remove(lfun.arglist[i]);
+                    }
+                    
+                    /* Evaluate the body as much as possible */
+                    reserve = eval;
                     
                     CronoType[] lbody = new CronoType[lfun.body.length];
                     optionsOff(); /*< Extra indent for clarity */
@@ -335,52 +335,52 @@ public class Interpreter extends Visitor {
                     }
                     resetOptions(); /*< Set options back to what they were */
                     
-		    /* Return the new, partially evaluated lambda */
-		    Symbol[] arglist = new Symbol[largs.size()];
-		    
-		    LambdaFunction clfun;
-		    clfun = new LambdaFunction(largs.toArray(arglist), lbody,
-					       lfun.environment);
-		    deindent();
+                    /* Return the new, partially evaluated lambda */
+                    Symbol[] arglist = new Symbol[largs.size()];
+                    
+                    LambdaFunction clfun;
+                    clfun = new LambdaFunction(largs.toArray(arglist), lbody,
+                                               lfun.environment);
+                    deindent();
                     traceResult(clfun);
                     printEnvironment();
                     
-		    return clfun;
-		}
-		/* Builtin partial evaluation */
-		List<CronoType> body = new LinkedList<CronoType>();
-		body.add(fun);
-		body.addAll(args); /*< Dump args in order into the new cons */
-		
-		/* Add symbols for missing args */
-		List<Symbol> arglist = new ArrayList<Symbol>();
-		Symbol sym;
-		for(int i = arglen, n = 0; i < nargs; ++i, ++n) {
-		    sym = new Symbol(String.format("_i?%d!_", n));
-		    body.add(sym);
-		    arglist.add(sym);
-		}
-		
-		/* Create a new lambda */
-		Symbol[] narglist = new Symbol[arglist.size()];
-		LambdaFunction blfun;
-		CronoType[] barr = new CronoType[] {Cons.fromList(body)};
-		blfun = new LambdaFunction(arglist.toArray(narglist), barr,
-					   getEnv());
-		deindent();
+                    return clfun;
+                }
+                /* Builtin partial evaluation */
+                List<CronoType> body = new LinkedList<CronoType>();
+                body.add(fun);
+                body.addAll(args); /*< Dump args in order into the new cons */
+                
+                /* Add symbols for missing args */
+                List<Symbol> arglist = new ArrayList<Symbol>();
+                Symbol sym;
+                for(int i = arglen, n = 0; i < nargs; ++i, ++n) {
+                    sym = new Symbol(String.format("_i?%d!_", n));
+                    body.add(sym);
+                    arglist.add(sym);
+                }
+                
+                /* Create a new lambda */
+                Symbol[] narglist = new Symbol[arglist.size()];
+                LambdaFunction blfun;
+                CronoType[] barr = new CronoType[] {Cons.fromList(body)};
+                blfun = new LambdaFunction(arglist.toArray(narglist), barr,
+                                           getEnv());
+                deindent();
                 traceResult(blfun);
                 printEnvironment();
                 
-		return blfun;
-	    }
-	    if(arglen > nargs && !fun.variadic) {
-		eval = reserve;
-		except(new InterpreterException(_too_many_args, fun, arglen,
+                return blfun;
+            }
+            if(arglen > nargs && !fun.variadic) {
+                eval = reserve;
+                except(new InterpreterException(_too_many_args, fun, arglen,
                                                 nargs));
-	    }
-	    
-	    /* Full evaluation */
-	    if(eval == EvalType.FULL) {
+            }
+            
+            /* Full evaluation */
+            if(eval == EvalType.FULL) {
                 if(fun instanceof LambdaFunction && dynamic) {
                     /* We have to trick the lambda function if we want dynamic
                      * scoping. I hate making so many objects left and right,
@@ -401,53 +401,53 @@ public class Interpreter extends Visitor {
                     return lresult;
                 }
                 
-		CronoType[] argarray = new CronoType[args.size()];
-		argarray = args.toArray(argarray);
-		TypeId[] types = new TypeId[args.size()];
-		for(int i = 0; i < types.length; ++i) {
-		    types[i] = argarray[i].typeId();
-		}
-		for(int i = 0; i < fun.args.length; ++i) {
-		    if(!(fun.args[i].isType(argarray[i]))) {
-			String argstr = Arrays.toString(types);
-			String expected = Arrays.toString(fun.args);
-			except(new InterpreterException(_type_mismatch, fun,
+                CronoType[] argarray = new CronoType[args.size()];
+                argarray = args.toArray(argarray);
+                TypeId[] types = new TypeId[args.size()];
+                for(int i = 0; i < types.length; ++i) {
+                    types[i] = argarray[i].typeId();
+                }
+                for(int i = 0; i < fun.args.length; ++i) {
+                    if(!(fun.args[i].isType(argarray[i]))) {
+                        String argstr = Arrays.toString(types);
+                        String expected = Arrays.toString(fun.args);
+                        except(new InterpreterException(_type_mismatch, fun,
                                                         expected, argstr));
-		    }
-		}
+                    }
+                }
                 
                 optionsOff();
-		CronoType fresult;
-		fresult = ((Function)value).run(this, args.toArray(argarray));
+                CronoType fresult;
+                fresult = ((Function)value).run(this, args.toArray(argarray));
                 resetOptions();
                 
-		deindent();
+                deindent();
                 traceResult(fresult);
                 printEnvironment();
                 
-		return fresult;
-	    }else {
-		args.add(0, value);
-		deindent();
+                return fresult;
+            }else {
+                args.add(0, value);
+                deindent();
                 Cons cresult = Cons.fromList(args);
                 traceResult(cresult);
                 printEnvironment();
-		
-		return cresult;
-	    }
-	}else if(eval == EvalType.PARTIAL) {
+                
+                return cresult;
+            }
+        }else if(eval == EvalType.PARTIAL) {
             List<CronoType> args = new ArrayList<CronoType>();
             args.add(value);
-	    while(iter.hasNext()) {
-		args.add(iter.next().accept(this));
-	    }
+            while(iter.hasNext()) {
+                args.add(iter.next().accept(this));
+            }
             CronoType conres = Cons.fromList(args);
             traceResult(conres);
             return conres;
         }
-	deindent();
+        deindent();
         /* The initial value is not a function */
-	except(new InterpreterException("Invalid Function Application: %s is not a function in %s", value, c));
+        except(new InterpreterException("Invalid Function Application: %s is not a function in %s", value, c));
         return null;
     }
     
@@ -468,35 +468,35 @@ public class Interpreter extends Visitor {
     public CronoType visit(Atom a) {
         printASTNode(String.format("Atom Node -> %s[%s]\n", a, a.typeId()));
         traceVisit(a);
-	if(eval == EvalType.NONE) {
+        if(eval == EvalType.NONE) {
             traceResult(a);
-	    return a;
-	}
-	
-	CronoType t = a;
-	if(t instanceof Symbol) {
-	    t = getEnv().get((Symbol)a);
-	    if(t == null) {
-		if(eval == EvalType.FULL) {
-		    except(new InterpreterException(_scope_err, a.repr()));
-		}
-		t = a;
-	    }
-	}
-	/* Not else-if, so that we perform a double-resolution on a symbol that
-	 * represents a TypeId */
-	if(t instanceof CronoTypeId) {
-	    CronoType res = t; /*< Save symbol resolution */
-	    t = getEnv().getType((CronoTypeId)t);
-	    if(t == null) {
-		if(eval == EvalType.FULL) {
-		    except(new InterpreterException(_type_scope_err, a));
-		}
-		t = res; /*< Revert to symbol resolution */
-	    }
-	}
+            return a;
+        }
+        
+        CronoType t = a;
+        if(t instanceof Symbol) {
+            t = getEnv().get((Symbol)a);
+            if(t == null) {
+                if(eval == EvalType.FULL) {
+                    except(new InterpreterException(_scope_err, a.repr()));
+                }
+                t = a;
+            }
+        }
+        /* Not else-if, so that we perform a double-resolution on a symbol that
+         * represents a TypeId */
+        if(t instanceof CronoTypeId) {
+            CronoType res = t; /*< Save symbol resolution */
+            t = getEnv().getType((CronoTypeId)t);
+            if(t == null) {
+                if(eval == EvalType.FULL) {
+                    except(new InterpreterException(_type_scope_err, a));
+                }
+                t = res; /*< Revert to symbol resolution */
+            }
+        }
         traceResult(t); /* We don't need to show the environment after atoms */
-	return t;
+        return t;
     }
     
     /**
@@ -510,13 +510,13 @@ public class Interpreter extends Visitor {
         printASTNode("Quote Node");
         traceVisit(q);
         
-	EvalType reserve = eval;
-	eval = EvalType.NONE;
-	CronoType result = q.node.accept(this);
-	eval = reserve;
-	
+        EvalType reserve = eval;
+        eval = EvalType.NONE;
+        CronoType result = q.node.accept(this);
+        eval = reserve;
+        
         traceResult(result);
-	return result;
+        return result;
     }
     
     public Visitor.VisitorState getState() {
