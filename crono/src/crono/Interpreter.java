@@ -64,7 +64,7 @@ public class Interpreter extends Visitor {
     protected boolean trace, rTrace;
     protected boolean printAST, rPrintAST;
     protected boolean debug, rDebug;
-    protected EvalType eval;
+    public EvalType eval;
 
     protected StringBuilder indent;
     protected Stack<Environment> envStack;
@@ -105,6 +105,10 @@ public class Interpreter extends Visitor {
 
     private CronoType coerceCombinator (CronoType val)
     {
+        if (eval == EvalType.PARTIAL)
+        {
+            return val;
+        }
         if (val == null)
         {
             throw new InterpreterException("attempting coerce on null");
@@ -349,9 +353,14 @@ public class Interpreter extends Visitor {
         CronoType maybe_comb;
         if ((maybe_comb = coerceCombinator(head)) != null)
         {
+            //EvalType tmp = eval;
+            //eval = EvalType.FULL;
+            printEnvironment();
             c = new Cons(maybe_comb, c.cdr());
             CombinatorApplication ca = new CombinatorApplication(c);
-            return ca.reduce(this);
+            CronoType res = ca.reduce(this);
+            //eval = tmp;
+            return res;
         }
         else
         {

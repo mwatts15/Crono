@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.ListIterator;
 import crono.*;
+import crono.type.Function.EvalType;
 import crono.type.*;
 
 /*
@@ -15,7 +16,7 @@ import crono.type.*;
  * on the AST, but maybe there should be a Node class or something that
  * deals with that
  */
-public class CombinatorApplication
+public class CombinatorApplication extends Atom
 {
     public static final TypeId TYPEID = new TypeId(":function_application", CombinatorApplication.class);
 
@@ -33,10 +34,10 @@ public class CombinatorApplication
         args = ((Cons) c.cdr()).toList();
     }
 
-    //public CronoType accept (Visitor v)
-    //{
-        //return v.visit((Atom)this);
-    //}
+    public CronoType accept (Visitor v)
+    {
+        return v.visit((Atom)this);
+    }
 
     /*
      * Applies this.function to the this.args
@@ -48,6 +49,10 @@ public class CombinatorApplication
          * This may be extended to a "callable"
          * later
          */
+        if (((Interpreter)v).eval == EvalType.PARTIAL)
+        {
+            return this;
+        }
         System.out.printf("Reducing combinatory expression...\n");
         CronoType o = function.accept(v);
         CronoType result = null;
